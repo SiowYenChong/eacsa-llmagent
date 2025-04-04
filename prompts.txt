@@ -1,0 +1,90 @@
+Customer Service Bot Test Plan
+
+1. Sentiment & Emotion Detection Tests
+- 😠 "This is the WORST service I've ever experienced! My package is 2 weeks late!"  
+  (Test: Strong negative sentiment/frustration detection)
+  
+- 😊 "I just received my order and I'm absolutely thrilled! The quality is amazing!"  
+  (Test: Positive sentiment/enthusiasm recognition)
+
+- 😐 "What's your return policy for electronics?"  
+  (Test: Neutral sentiment handling)
+
+- 😕 "The product was good but arrived damaged... can I get a replacement?"  
+  (Test: Mixed sentiment detection)
+
+2. Knowledge Retrieval Tests
+- "How do I track order #123456?"  
+  (Test: Order tracking procedure retrieval)
+
+- "What's the warranty period for Model X-2000?"  
+  (Test: Product-specific knowledge lookup)
+
+- "Can I exchange sizes for clothing items?"  
+  (Test: Return policy understanding)
+
+- "What payment methods do you accept?"  
+  (Test: General FAQ retrieval)
+
+3. Complex Scenario Handling
+- "I ordered a blue sweater but received red. It's also too small. What are my options?"  
+  (Test: Multi-issue resolution and context retention)
+
+- "My previous agent said I'd get a refund, but it's not showing in my bank account."  
+  (Test: Session history integration)
+
+- "Can you compare features between Product A and Product B?"  
+  (Test: Comparative analysis capability)
+
+4. Edge Cases & Error Handling
+- "" (Empty input)  
+  (Test: Empty query handling)
+
+- "Ihateyourcompany thisisawful" (No spaces)  
+  (Test: Unstructured input processing)
+
+- "@#%&! Your system deleted my account!"  
+  (Test: Special characters/slang handling)
+
+- "123 Main St, Springfield. Credit card 4111-1111-1111-1111"  
+  (Test: PII detection/security)
+
+5. Multi-Language Support
+- "¿Hablas español? Necesito ayuda con mi pedido."  
+  (Test: Language detection & handling)
+
+- "我的订单没有到达" (Chinese: "My order hasn't arrived")  
+  (Test: Non-Latin script processing)
+
+6. Contextual Understanding
+- "What did I ask about earlier?"  
+  (Test: Session memory recall)
+
+- "No, I meant the other product"  
+  (Test: Ambiguous reference resolution)
+
+7. Stress Tests
+- "I want to return the item I bought last week because..." (250+ word detailed complaint)  
+  (Test: Long-text processing)
+
+- Rapid fire: "Status?" → "Which order?" → "12345"  
+  (Test: Conversational flow)
+
+8. Tone Adaptation Checks
+- "I'm really anxious about this delayed delivery..."  
+  (Test: Empathetic response generation)
+
+- "YAY! Just got my package early!! 😍"  
+  (Test: Enthusiastic response matching)
+
+- "Explain warranty terms in legal language"  
+  (Test: Formal tone adaptation)
+
+Verification Checklist:
+1. Correct sentiment/emotion classification
+2. Relevant knowledge base documents retrieved
+3. Response matches expected tone guidelines
+4. Session history updated properly
+5. No sensitive data leakage
+6. Response latency < 3 seconds
+7. Error handling for unexpected inputs

@@ -62,20 +62,18 @@ class KnowledgeAgent:
             print(f"Error initializing vector store: {str(e)}")
             return None
     
-    def get_context(self, query: str, max_docs: int = 10) -> str:
-        """
-        Retrieve relevant context for a query from the vector store.
-        
-        Args:
-            query (str): The user query to find relevant information for
-            max_docs (int): Maximum number of documents to retrieve
-            
-        Returns:
-            str: Concatenated relevant context
-        """
+    # knowledge_agent.py
+    def get_context(self, query: str, max_docs: int = 10) -> dict:
+        """Return context with metadata"""
         if self.vector_store is None:
-            return "Knowledge base unavailable."
+            return {"text": "Knowledge base unavailable.", "sources": []}
 
-        relevant_docs = self.vector_store.similarity_search(query, k=max_docs)
-        context = "\n\n".join([doc.page_content for doc in relevant_docs])
-        return context
+        relevant_docs = self.vector_store.similarity_search_with_score(query, k=max_docs)
+        context_text = "\n\n".join([doc.page_content for doc, _ in relevant_docs])
+        sources = [{
+            "content": doc.page_content,
+            "score": float(score),
+            "metadata": doc.metadata
+        } for doc, score in relevant_docs]
+        
+        return {"text": context_text, "sources": sources}
