@@ -1,6 +1,6 @@
 import os
 from typing import List, Dict, Any
-from langchain_community.chat_models import ChatOpenAI
+from langchain_openai import ChatOpenAI
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 
 class LLMAgent:

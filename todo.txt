@@ -1,0 +1,12 @@
+In case requirements.txt still has incompatibilities of library
+Try these:
+
+pip install -U langchain-openai
+pip install --force-reinstall --no-deps pydantic==1.10.19
+pip uninstall pydantic
+pip install --upgrade langchain-core  # This should install a version that satisfies >=0.3.49
+pip uninstall langchain-community
+pip install langchain-community
+
+pip uninstall numpy
+pip install numpy==1.26.2
