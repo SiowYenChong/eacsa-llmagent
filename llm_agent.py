@@ -26,6 +26,7 @@ class LLMAgent:
         return ChatOpenAI(
             temperature=self.temperature,
             model=self.model_name,
+            streaming=True,  # Enable streaming
             openai_api_key=os.getenv("OPENAI_API_KEY")
         )
     
@@ -72,3 +73,35 @@ class LLMAgent:
             return response.content
         except Exception as e:
             return f"Sorry, I encountered an error: {str(e)}"
+        
+    def generate_response_stream(self, query: str, context: str, 
+                                history: list, tone_instruction: str):
+        """Stream generated response chunks"""
+        try:
+            messages = self._format_messages(query, context, history, tone_instruction)
+            
+            for chunk in self.chat_model.stream(messages):
+                content = chunk.content
+                if content is not None:
+                    yield content
+        except Exception as e:
+            yield f"Error: {str(e)}"
+
+    def _format_messages(self, query: str, context: str, 
+                        history: list, tone_instruction: str):
+        """Helper method to format messages for streaming"""
+        messages = [
+            SystemMessage(content=f"""
+            Context: {context}
+            Tone instructions: {tone_instruction}
+            """)
+        ]
+        
+        for message in history[-6:]:
+            if message["role"] == "user":
+                messages.append(HumanMessage(content=message["content"]))
+            elif message["role"] == "assistant":
+                messages.append(AIMessage(content=message["content"]))
+                
+        messages.append(HumanMessage(content=query))
+        return messages
