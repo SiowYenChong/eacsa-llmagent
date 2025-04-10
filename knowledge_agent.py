@@ -8,9 +8,11 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 # Configure logging
 import logging
 import json, bcrypt  # Add bcrypt for password hashing
+import re  # Add this line
+import streamlit as st
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-import re  # Add this line
 
 class KnowledgeAgent:
     """Intelligent knowledge agent with secure order verification"""
@@ -31,6 +33,7 @@ class KnowledgeAgent:
         self.product_data = []
         self._load_structured_data()
 
+    @st.cache_resource  # Cache the FAISS vector store
     def _initialize_vector_store(self):
         """Reliable vector store initialization from original working code"""
         try:
@@ -90,6 +93,7 @@ class KnowledgeAgent:
                 except Exception as e:
                     logger.error(f"Failed to process {file}: {str(e)}")
 
+    @st.cache_data  # Cache file content to avoid reloading
     def _load_file_content(self, path: str) -> str:
         """Secure file content loader with validation"""
         try:
@@ -121,6 +125,7 @@ class KnowledgeAgent:
         return sum(re.search(p, content, re.IGNORECASE) is not None 
                    for p in required_patterns) >= 3
 
+    @st.cache_data  # Cache parsed structured data
     def _parse_structured_data(self, content: str, data_type: str) -> List[Dict]:
         """Parse structured data from multiple formats"""
         try:
@@ -140,6 +145,7 @@ class KnowledgeAgent:
             logger.error(f"Parse error: {str(e)}")
             return []
 
+    @st.cache_data  # Cache validated orders
     def _validate_orders(self, orders: List[Dict]) -> List[Dict]:
         """Validate order structure and mask sensitive data"""
         valid_orders = []
@@ -157,6 +163,7 @@ class KnowledgeAgent:
                 logger.warning(f"Invalid order format: {str(e)}")
         return valid_orders
 
+    @st.cache_data  # Cache validated products
     def _validate_products(self, products: List[Dict]) -> List[Dict]:
         """Validate product structure and sanitize data"""
         valid_products = []
@@ -174,6 +181,7 @@ class KnowledgeAgent:
                 logger.warning(f"Invalid product format: {str(e)}")
         return valid_products
 
+    @st.cache_data  # Cache context retrieval results
     def get_context(self, query: str, max_docs: int = 10) -> Dict[str, Any]:
         """Working context retrieval from original implementation"""
         if not self.vector_store:
@@ -192,5 +200,3 @@ class KnowledgeAgent:
         except Exception as e:
             logger.error(f"Search error: {str(e)}")
             return {"text": "Search failed", "sources": []}
-
-    
