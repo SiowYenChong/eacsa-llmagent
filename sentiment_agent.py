@@ -4,7 +4,8 @@ import numpy as np
 from typing import Dict, Any, List
 from transformers import pipeline
 from tenacity import retry, stop_after_attempt, wait_exponential
-from huggingface_hub import login, snapshot_download
+from huggingface_hub import login
+import streamlit as st
 import os
 
 logging.basicConfig(level=logging.INFO)
@@ -16,7 +17,7 @@ class SentimentAgent:
     def __init__(self):
         self.sentiment_history = []
         self.intensity_window = []
-        login(token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
+        login(token=st.secrets.huggingface.token)
         try:
             # Initialize sentiment analysis model
             self.sentiment_analyzer = pipeline(

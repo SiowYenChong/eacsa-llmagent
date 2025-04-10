@@ -204,3 +204,53 @@ class KnowledgeAgent:
         except Exception as e:
             logger.error(f"Search error: {str(e)}")
             return {"text": "Search failed", "sources": []}
+        
+    def _parse_key_value(self, content: str, data_type: str) -> List[Dict]:
+        """Parse key-value pairs from text content"""
+        parsed_data = []
+        current_entry = {}
+        
+        for line in content.split('\n'):
+            line = line.strip()
+            if not line:
+                if current_entry:
+                    parsed_data.append(current_entry)
+                    current_entry = {}
+                continue
+                
+            if ':' in line:
+                key, value = line.split(':', 1)
+                current_entry[key.strip()] = value.strip()
+            elif '=' in line:
+                key, value = line.split('=', 1)
+                current_entry[key.strip()] = value.strip()
+        
+        if current_entry:
+            parsed_data.append(current_entry)
+            
+        return parsed_data
+
+    def _parse_csv(self, content: str, data_type: str) -> List[Dict]:
+        """Parse CSV content into structured data"""
+        from io import StringIO
+        import csv
+        
+        parsed_data = []
+        reader = csv.DictReader(StringIO(content))
+        
+        for row in reader:
+            # Convert numeric fields
+            converted_row = {}
+            for key, value in row.items():
+                if key.lower() in ['price', 'score', 'rating']:
+                    try:
+                        converted_row[key] = float(value)
+                    except ValueError:
+                        converted_row[key] = value
+                elif value.isdigit():
+                    converted_row[key] = int(value)
+                else:
+                    converted_row[key] = value
+            parsed_data.append(converted_row)
+            
+        return parsed_data
