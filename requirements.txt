@@ -1,11 +1,26 @@
 streamlit==1.30.0
-openai==1.6.1
+openai==1.14.0  # Updated to compatible version
 langchain==0.1.9
-langchain-openai
-langchain-community==0.0.25  # Updated to match langchain's requirement
+langchain-openai==0.0.8
+langchain-community==0.0.25
 faiss-cpu==1.7.4
 python-dotenv==1.0.0
-transformers==4.35.2  # Compatible with Keras <3
-torch==2.1.0         # Ensures compatibility with Transformers
-numpy==1.26.2        # Prevents FAISS compatibility issues
+huggingface_hub==0.16.4  # Version that contains cached_download
+numpy==1.26.2
+transformers==4.35.2
+torch==2.1.0
 sympy==1.12.0
+plotly==5.18.0
+pandas==2.1.4
+presidio-analyzer==2.2.33
+presidio-anonymizer==2.2.33
+reportlab==4.0.4
+sentence-transformers==2.2.2
+typing-extensions==4.12.2
+spacy==3.7.0
+httpx==0.27.2
+pydantic==1.10.13  
+langchain-core==0.0.28
+requests==2.31.0  
+bcrypt
+sentencepiece
