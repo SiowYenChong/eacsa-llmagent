@@ -4,9 +4,6 @@ import numpy as np
 from typing import Dict, Any, List
 from transformers import pipeline
 
-SENTIMENT_MODEL_PATH = "models/sentiment_model/twitter-roberta-base-sentiment-latest"
-EMOTION_MODEL_PATH = "models/sentiment_model/emotion-english-distilroberta-base"
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -20,7 +17,7 @@ class SentimentAgent:
             # Initialize sentiment analysis model
             self.sentiment_analyzer = pipeline(
                 "sentiment-analysis",
-                model=SENTIMENT_MODEL_PATH
+                model="cardiffnlp/twitter-roberta-base-sentiment-latest"
             )
             
             # Verify sentiment model with case-insensitive check
@@ -40,7 +37,7 @@ class SentimentAgent:
             # Initialize emotion classifier
             self.emotion_classifier = pipeline(
                 "text-classification",
-                model=EMOTION_MODEL_PATH,
+                model="j-hartmann/emotion-english-distilroberta-base",
                 top_k=None,
                 return_all_scores=True
             )
