@@ -112,7 +112,7 @@ spacy-legacy==3.0.12
 spacy-loggers==1.0.5
 SQLAlchemy==2.0.40
 srsly==2.5.1
-streamlit==1.30.0
+streamlit==1.32.0
 sympy==1.12
 tenacity==8.5.0
 thinc==8.2.5
