@@ -23,8 +23,8 @@ class SentimentAgent:
             self.sentiment_analyzer = pipeline(
                 "sentiment-analysis",
                 model="cardiffnlp/twitter-roberta-base-sentiment-latest",
-                cache_dir="./models",
-                token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+                model_kwargs={"cache_dir": "./models"}, 
+                token=True 
             )
             
             # Verify sentiment model with case-insensitive check
@@ -47,8 +47,8 @@ class SentimentAgent:
                 model="j-hartmann/emotion-english-distilroberta-base",
                 top_k=None,
                 return_all_scores=True,
-                cache_dir="./models",
-                token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+                model_kwargs={"cache_dir": "./models"}, 
+                token=True 
             )
             
             logger.info("All models loaded successfully")
