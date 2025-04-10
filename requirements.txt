@@ -95,7 +95,7 @@ reportlab==4.0.4
 requests==2.31.0
 requests-file==2.1.0
 requests-toolbelt==1.0.0
-rich==14.0.0
+rich==13.7.1 
 rpds-py==0.24.0
 safetensors==0.5.3
 scikit-learn==1.6.1
