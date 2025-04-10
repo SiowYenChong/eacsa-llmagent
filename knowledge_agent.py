@@ -34,30 +34,30 @@ class KnowledgeAgent:
         self._load_structured_data()
 
     @st.cache_resource  # Cache the FAISS vector store
-    def _initialize_vector_store(self):
+    def _initialize_vector_store(_self):
         """Reliable vector store initialization from original working code"""
         try:
-            if os.path.exists(self.index_path):
+            if os.path.exists(_self.index_path):
                 logger.info("Loading existing FAISS index")
                 return FAISS.load_local(
-                    self.index_path,
+                    _self.index_path,
                     OpenAIEmbeddings(),
                     allow_dangerous_deserialization=True
                 )
 
             logger.info("Creating new FAISS index")
-            text_loader = DirectoryLoader(self.knowledge_base_dir, glob="**/*.txt", loader_cls=TextLoader)
-            csv_loader = DirectoryLoader(self.knowledge_base_dir, glob="**/*.csv", loader_cls=CSVLoader)
+            text_loader = DirectoryLoader(_self.knowledge_base_dir, glob="**/*.txt", loader_cls=TextLoader)
+            csv_loader = DirectoryLoader(_self.knowledge_base_dir, glob="**/*.csv", loader_cls=CSVLoader)
             documents = text_loader.load() + csv_loader.load()
 
             splitter = RecursiveCharacterTextSplitter(
-                chunk_size=self.chunk_size,
-                chunk_overlap=self.chunk_overlap
+                chunk_size=_self.chunk_size,
+                chunk_overlap=_self.chunk_overlap
             )
             chunks = splitter.split_documents(documents)
 
             vector_store = FAISS.from_documents(chunks, OpenAIEmbeddings())
-            vector_store.save_local(self.index_path)
+            vector_store.save_local(_self.index_path)
             return vector_store
 
         except Exception as e:
@@ -94,7 +94,7 @@ class KnowledgeAgent:
                     logger.error(f"Failed to process {file}: {str(e)}")
 
     @st.cache_data  # Cache file content to avoid reloading
-    def _load_file_content(self, path: str) -> str:
+    def _load_file_content(_self, path: str) -> str:
         """Secure file content loader with validation"""
         try:
             with open(path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -126,7 +126,7 @@ class KnowledgeAgent:
                    for p in required_patterns) >= 3
 
     @st.cache_data  # Cache parsed structured data
-    def _parse_structured_data(self, content: str, data_type: str) -> List[Dict]:
+    def _parse_structured_data(_self, content: str, data_type: str) -> List[Dict]:
         """Parse structured data from multiple formats"""
         try:
             # Attempt JSON parsing
@@ -135,18 +135,18 @@ class KnowledgeAgent:
                 return data if isinstance(data, list) else [data]
 
             # Attempt CSV parsing
-            if self._is_csv(content):
-                return self._parse_csv(content, data_type)
+            if _self._is_csv(content):
+                return _self._parse_csv(content, data_type)
 
             # Fallback to key-value parsing
-            return self._parse_key_value(content, data_type)
+            return _self._parse_key_value(content, data_type)
 
         except Exception as e:
             logger.error(f"Parse error: {str(e)}")
             return []
 
     @st.cache_data  # Cache validated orders
-    def _validate_orders(self, orders: List[Dict]) -> List[Dict]:
+    def _validate_orders(_self, orders: List[Dict]) -> List[Dict]:
         """Validate order structure and mask sensitive data"""
         valid_orders = []
         for order in orders:
@@ -156,7 +156,7 @@ class KnowledgeAgent:
                     continue
                 
                 # Mask email before storage
-                order['email'] = self._mask_email(order.get('email', ''))
+                order['email'] = _self._mask_email(order.get('email', ''))
                 valid_orders.append(order)
                 
             except Exception as e:
@@ -164,7 +164,7 @@ class KnowledgeAgent:
         return valid_orders
 
     @st.cache_data  # Cache validated products
-    def _validate_products(self, products: List[Dict]) -> List[Dict]:
+    def _validate_products(_self, products: List[Dict]) -> List[Dict]:
         """Validate product structure and sanitize data"""
         valid_products = []
         for product in products:
@@ -182,13 +182,13 @@ class KnowledgeAgent:
         return valid_products
 
     @st.cache_data  # Cache context retrieval results
-    def get_context(self, query: str, max_docs: int = 10) -> Dict[str, Any]:
+    def get_context(_self, query: str, max_docs: int = 10) -> Dict[str, Any]:
         """Working context retrieval from original implementation"""
-        if not self.vector_store:
+        if not _self.vector_store:
             return {"text": "Knowledge base unavailable", "sources": []}
 
         try:
-            results = self.vector_store.similarity_search_with_score(query, k=max_docs)
+            results = _self.vector_store.similarity_search_with_score(query, k=max_docs)
             return {
                 "text": "\n\n".join([doc.page_content for doc, _ in results]),
                 "sources": [{
