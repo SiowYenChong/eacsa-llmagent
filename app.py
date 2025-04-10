@@ -14,6 +14,15 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
+# Set environment variables from Streamlit secrets
+try:
+    os.environ["OPENAI_API_KEY"] = st.secrets.openai.api_key
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"  # For macOS libiomp compatibility
+except AttributeError as e:
+    logger.error("Missing Streamlit secrets configuration: %s", str(e))
+    st.error("🔐 Configuration error: Missing API key setup")
+    st.stop()
+
 # Page configuration
 st.set_page_config(
     page_title="Customer Service Bot",

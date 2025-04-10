@@ -3,3 +3,6 @@
 .idea
 **/__pycache__/
 .env
+*.secret
+keys/
+secrets.toml
