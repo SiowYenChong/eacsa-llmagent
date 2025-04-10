@@ -124,6 +124,10 @@ class KnowledgeAgent:
         ]
         return sum(re.search(p, content, re.IGNORECASE) is not None 
                    for p in required_patterns) >= 3
+    
+    def _is_csv(self, content: str) -> bool:
+        """Improved CSV detection"""
+        return bool(re.search(r'^[\w\s]+,[\w\s]+([,\n]|$)', content.strip()))
 
     @st.cache_data  # Cache parsed structured data
     def _parse_structured_data(_self, content: str, data_type: str) -> List[Dict]:

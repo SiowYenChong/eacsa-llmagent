@@ -3,13 +3,14 @@ import logging
 import numpy as np
 from typing import Dict, Any, List
 from transformers import pipeline
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class SentimentAgent:
     """Advanced sentiment analysis with multi-model integration and tone guidance"""
-    
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     def __init__(self):
         self.sentiment_history = []
         self.intensity_window = []
