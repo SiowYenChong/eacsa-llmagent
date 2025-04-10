@@ -4,6 +4,8 @@ import numpy as np
 from typing import Dict, Any, List
 from transformers import pipeline
 from tenacity import retry, stop_after_attempt, wait_exponential
+from huggingface_hub import login, snapshot_download
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -14,11 +16,14 @@ class SentimentAgent:
     def __init__(self):
         self.sentiment_history = []
         self.intensity_window = []
+        login(token=os.getenv("HUGGINGFACEHUB_API_TOKEN"))
         try:
             # Initialize sentiment analysis model
             self.sentiment_analyzer = pipeline(
                 "sentiment-analysis",
-                model="cardiffnlp/twitter-roberta-base-sentiment-latest"
+                model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+                cache_dir="./models",
+                token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
             )
             
             # Verify sentiment model with case-insensitive check
@@ -40,7 +45,9 @@ class SentimentAgent:
                 "text-classification",
                 model="j-hartmann/emotion-english-distilroberta-base",
                 top_k=None,
-                return_all_scores=True
+                return_all_scores=True,
+                cache_dir="./models",
+                token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
             )
             
             logger.info("All models loaded successfully")
