@@ -61,7 +61,7 @@ multidict==6.3.2
 murmurhash==1.0.12
 mypy-extensions==1.0.0
 narwhals==1.33.0
-networkx==3.4.2
+networkx==3.2.1
 nltk==3.9.1
 numpy==1.26.2
 openai==1.71.0
