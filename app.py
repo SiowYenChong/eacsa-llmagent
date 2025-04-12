@@ -76,7 +76,7 @@ if 'cultural_detector' not in st.session_state:
 if 'bias_auditor' not in st.session_state:
     st.session_state.bias_auditor = BiasAuditor()
 if 'explainer' not in st.session_state:
-    st.session_state.explainer = EmotionExplainer()
+    st.session_state.explainer = None
 
 # Initialize agents with caching
 @st.cache_resource
@@ -168,6 +168,9 @@ def process_user_input(user_query: str):
         analysis = st.session_state.sentiment_agent.analyze(sanitized_query)
         tone_guidance = st.session_state.sentiment_agent.generate_tone_guidance(analysis)
 
+        if 'explainer' not in st.session_state:
+            st.session_state.explainer = EmotionExplainer(model, tokenizer)
+            
         # Bias auditing
         if st.session_state.bias_auditor:
             bias_report = st.session_state.bias_auditor.audit(
@@ -180,8 +183,6 @@ def process_user_input(user_query: str):
         if st.session_state.hitl_manager.check_escalation_needed():
             return _handle_escalation()
         
-        if 'explainer' not in st.session_state:
-            st.session_state.explainer = None
 
         # Explanation generation
         explanation = st.session_state.explainer.explain(user_query)
