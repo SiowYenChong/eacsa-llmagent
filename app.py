@@ -353,7 +353,7 @@ with st.sidebar:
             st.write("### Debug Information")
             st.write(st.session_state.debug_data)
         else:
-            st.alert("No debug data available yet - chat to generate!")
+            st.warning("No debug data available yet - chat to generate!")
     if st.checkbox("📈 Show Emotion Analytics"):
         st.session_state.visualizer.display_analytics_dashboard()
     
