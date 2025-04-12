@@ -21,10 +21,7 @@ class SentimentAgent:
         self.language_detector = LanguageDetector()
         self.code_switch_handler = CodeSwitchHandler()
         login(token=st.secrets.huggingface.token)
-        self.initialize_models()
 
-    def initialize_models(self):
-        """Load robust alternative models"""
         try:
             # Universal sentiment model with better language coverage
             self.sentiment_analyzer = pipeline(
