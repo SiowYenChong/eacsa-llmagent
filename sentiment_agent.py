@@ -31,7 +31,8 @@ class SentimentAgent:
                 "sentiment-analysis",
                 model="cardiffnlp/twitter-roberta-base-sentiment-latest",
                 model_kwargs={"cache_dir": "./models"},
-                max_length=512
+                max_length=512,
+                token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
             )
             
             # Multilingual emotion model with fallback
@@ -40,7 +41,8 @@ class SentimentAgent:
                 model="joeddav/distilbert-base-uncased-go-emotions",
                 top_k=None,
                 return_all_scores=True,
-                model_kwargs={"cache_dir": "./models"}
+                model_kwargs={"cache_dir": "./models"},
+                token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
             )
             
             logger.info("Successfully loaded core models")
