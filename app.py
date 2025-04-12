@@ -253,6 +253,50 @@ def process_user_input(user_query: str):
                     logger.error(f"Knowledge retrieval error: {str(e)}")
                     context["text"] = f"Error: {str(e)}"
 
+        # Generate tone instruction
+                try:
+                    tone_guidance = st.session_state.sentiment_agent.generate_tone_guidance(analysis)
+                except KeyError as e:
+                    logger.error(f"Tone guidance error: {str(e)}")
+                    tone_instruction = f"""
+                    Respond using:
+                    - Base tone: {tone_guidance['base_tone']}
+                    - Strategy: {tone_guidance['emotional_strategy']['structure']}
+                    - Empathy: {tone_guidance['emotional_strategy']['empathy']}/5
+                    - Urgency: {tone_guidance['urgency_level']}
+                    """
+                
+                # Display sentiment analysis
+                with st.status("💭 Analyzing emotions...", expanded=True) as status:
+                    try:
+                        cols = st.columns(2)
+                        with cols[0]:
+                            st.markdown("### Customer Sentiment")
+                            sentiment = analysis["sentiment"]
+                            st.metric(
+                                label="Dominant Mood",
+                                value=sentiment["label"].upper(),
+                                delta=f"Confidence: {sentiment['score']:.2%}"
+                            )
+                        with cols[1]:
+                            st.markdown("### Emotional Breakdown")
+                            if analysis["emotions"]:
+                                for emotion in analysis["emotions"][:3]:  # Show top 3 emotions
+                                    st.markdown(
+                                        f"**{emotion['label'].title()}**  \n"
+                                        f"`{emotion['score']:.2%}` confidence"
+                                    )
+                                    st.progress(
+                                        emotion["score"],
+                                        text=f"Intensity Level: {emotion['score']:.0%}"
+                                    )
+                            else:
+                                st.warning("No strong emotions detected")
+                        status.update(label="✅ Emotional analysis completed", state="complete")
+                    except Exception as e:
+                        logger.error(f"Sentiment display error: {str(e)}")
+                        st.error("Failed to display emotion analysis")
+
         # Response generation
         response_content = ""
         if st.session_state.llm_agent:
