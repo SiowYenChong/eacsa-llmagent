@@ -6,6 +6,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import DirectoryLoader, TextLoader, CSVLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 # Configure logging
+import os
 import logging
 import json, bcrypt  # Add bcrypt for password hashing
 import re  # Add this line
