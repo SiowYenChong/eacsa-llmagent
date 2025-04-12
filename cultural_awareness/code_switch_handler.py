@@ -1,8 +1,9 @@
 from transformers import pipeline
 import re
 import logging
-import language_detector 
 from typing import Dict, Any
+from cultural_awareness import language_detector
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
