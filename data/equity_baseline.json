@@ -1,0 +1,9 @@
+{
+    "demographics": ["age", "gender", "ethnicity"],
+    "threshold": 0.85,
+    "reference_accuracy": {
+        "age": 0.82,
+        "gender": 0.88,
+        "ethnicity": 0.79
+    }
+}
