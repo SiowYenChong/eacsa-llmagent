@@ -21,32 +21,44 @@ class SentimentAgent:
         self.language_detector = LanguageDetector()
         self.code_switch_handler = CodeSwitchHandler()
         login(token=st.secrets.huggingface.token)
-
         try:
-            # Universal sentiment model with better language coverage
+            # Initialize sentiment analysis model
             self.sentiment_analyzer = pipeline(
                 "sentiment-analysis",
                 model="cardiffnlp/twitter-roberta-base-sentiment-latest",
-                model_kwargs={"cache_dir": "./models"},
-                max_length=512,
-                token=True
+                model_kwargs={"cache_dir": "./models"}, 
+                token=True 
             )
             
-            # Multilingual emotion model with fallback
+            # Verify sentiment model with case-insensitive check
+            test_output = self.sentiment_analyzer("I love this!")
+            if not isinstance(test_output, list) or len(test_output) == 0:
+                raise ValueError("Invalid sentiment model output")
+                
+            test_result = test_output[0]
+            received_label = test_result['label'].lower()
+            allowed_labels = {'negative', 'neutral', 'positive'}
+            
+            if received_label not in allowed_labels:
+                raise ValueError(f"Unexpected sentiment label: {test_result['label']}")
+
+            logger.info("Sentiment model initialized successfully")
+            
+            # Initialize emotion classifier
             self.emotion_classifier = pipeline(
                 "text-classification",
-                model="joeddav/distilbert-base-uncased-go-emotions",
+                model="j-hartmann/emotion-english-distilroberta-base",
                 top_k=None,
                 return_all_scores=True,
-                model_kwargs={"cache_dir": "./models"},
-                token=True
+                model_kwargs={"cache_dir": "./models"}, 
+                token=True 
             )
             
-            logger.info("Successfully loaded core models")
-            
+            logger.info("All models loaded successfully")
+
         except Exception as e:
-            logger.error(f"Model loading failed: {str(e)}")
-            self.load_fallback_models()
+            logger.error(f"Model initialization failed: {str(e)}")
+            raise
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Enhanced multilingual analysis"""
