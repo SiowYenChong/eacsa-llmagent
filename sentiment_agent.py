@@ -172,6 +172,17 @@ class SentimentAgent:
             "intensity_trend": "stable",
             "valence": 0.0
         }
+    
+    def _fallback_analysis(self, text: str) -> Dict[str, Any]:
+        """Fallback for error conditions"""
+        return {
+            "sentiment": {"label": "neutral", "score": 0.0},
+            "emotions": [{"label": "neutral", "score": 0.0}],
+            "context_shift": False,
+            "intensity_trend": "stable",
+            "valence": 0.0,
+            "language_info": self.code_switch_handler.analyze(text)
+        }
 
     # Maintained original simple analysis method
     def simple_analyze(self, text: str) -> Dict[str, Any]:
