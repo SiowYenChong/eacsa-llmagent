@@ -42,8 +42,13 @@ def import_agents():
         from session_manager import SessionManager
         from data_sanitizer import DataSanitizer
         from visualization.emotion_charts import EmotionVisualizer
+        from collaboration.hitl_manager import HITLManager
+        from explainability.emotion_lrp import EmotionExplainer
+        from cultural_awareness.language_detector import LanguageDetector
+        from cultural_awareness.fairness_audit import BiasAuditor
         return (SentimentAgent, KnowledgeAgent, LLMAgent, 
-                SessionManager, DataSanitizer, EmotionVisualizer)
+                SessionManager, DataSanitizer, EmotionVisualizer, HITLManager,
+                EmotionExplainer, LanguageDetector, BiasAuditor)
     except ImportError as e:
         st.error(f"Module import error: {str(e)}")
         st.stop()
