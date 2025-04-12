@@ -76,7 +76,7 @@ if 'cultural_detector' not in st.session_state:
 if 'bias_auditor' not in st.session_state:
     st.session_state.bias_auditor = BiasAuditor()
 if 'explainer' not in st.session_state:
-    st.session_state.explainer = None
+    st.session_state.explainer = EmotionExplainer()
 
 # Initialize agents with caching
 @st.cache_resource
@@ -179,6 +179,9 @@ def process_user_input(user_query: str):
         # HITL escalation check
         if st.session_state.hitl_manager.check_escalation_needed():
             return _handle_escalation()
+        
+        if 'explainer' not in st.session_state:
+            st.session_state.explainer = None
 
         # Explanation generation
         explanation = st.session_state.explainer.explain(user_query)
