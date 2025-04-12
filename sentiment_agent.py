@@ -18,6 +18,8 @@ import onnxruntime as ort
 class SentimentAgent:
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     def __init__(self):
+        self.sentiment_history = []
+        self.intensity_window = []
         self.language_detector = LanguageDetector()
         self.code_switch_handler = CodeSwitchHandler()
         login(token=st.secrets.huggingface.token)
