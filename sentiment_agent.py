@@ -62,6 +62,27 @@ class SentimentAgent:
             logger.error(f"Model initialization failed: {str(e)}")
             raise
 
+    def _default_analysis(self) -> Dict[str, Any]:
+            """Fallback for error conditions"""
+            return {
+                "sentiment": {"label": "neutral", "score": 0.0},
+                "emotions": [{"label": "neutral", "score": 0.0}],
+                "context_shift": False,
+                "intensity_trend": "stable",
+                "valence": 0.0
+            }
+    
+    def _fallback_analysis(self, text: str, lang_info: Dict) -> Dict[str, Any]:
+        """Fallback with existing language info"""
+        return {
+            "sentiment": {"label": "neutral", "score": 0.0},
+            "emotions": [{"label": "neutral", "score": 0.0}],
+            "context_shift": False,
+            "intensity_trend": "stable",
+            "valence": 0.0,
+            "language_info": lang_info  # Use pre-computed info instead of re-analyzing
+        }
+
     def analyze(self, text: str) -> Dict[str, Any]:
         """Enhanced multilingual analysis"""
         lang_info = self.language_detector.detect_language(text)
@@ -161,28 +182,7 @@ class SentimentAgent:
         instruction += f"Empathy level: {strategy['empathy']}/5. "
         instruction += f"Urgency: {guidance['urgency_level'].capitalize()}"
         
-        return instruction
-
-    def _default_analysis(self) -> Dict[str, Any]:
-        """Fallback for error conditions"""
-        return {
-            "sentiment": {"label": "neutral", "score": 0.0},
-            "emotions": [{"label": "neutral", "score": 0.0}],
-            "context_shift": False,
-            "intensity_trend": "stable",
-            "valence": 0.0
-        }
-    
-    def _fallback_analysis(self, text: str, lang_info: Dict) -> Dict[str, Any]:
-        """Fallback with existing language info"""
-        return {
-            "sentiment": {"label": "neutral", "score": 0.0},
-            "emotions": [{"label": "neutral", "score": 0.0}],
-            "context_shift": False,
-            "intensity_trend": "stable",
-            "valence": 0.0,
-            "language_info": lang_info  # Use pre-computed info instead of re-analyzing
-        }
+        return instruction   
 
     # Maintained original simple analysis method
     def simple_analyze(self, text: str) -> Dict[str, Any]:
