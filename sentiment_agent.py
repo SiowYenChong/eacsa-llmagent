@@ -71,7 +71,7 @@ class SentimentAgent:
         
         # Use appropriate model based on language
         if lang_info['primary_lang'] not in ['en', 'es', 'zh']:
-            return self._fallback_analysis(text)
+            return self._fallback_analysis(text, lang_info)
         if not text.strip():
             return self._default_analysis()
             
@@ -173,15 +173,15 @@ class SentimentAgent:
             "valence": 0.0
         }
     
-    def _fallback_analysis(self, text: str) -> Dict[str, Any]:
-        """Fallback for error conditions"""
+    def _fallback_analysis(self, text: str, lang_info: Dict) -> Dict[str, Any]:
+        """Fallback with existing language info"""
         return {
             "sentiment": {"label": "neutral", "score": 0.0},
             "emotions": [{"label": "neutral", "score": 0.0}],
             "context_shift": False,
             "intensity_trend": "stable",
             "valence": 0.0,
-            "language_info": self.code_switch_handler.analyze(text)
+            "language_info": lang_info  # Use pre-computed info instead of re-analyzing
         }
 
     # Maintained original simple analysis method
