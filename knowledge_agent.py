@@ -1,4 +1,4 @@
-import os
+
 from typing import List, Dict, Any, Optional, Tuple  # Updated import
 from langchain.docstore.document import Document
 from langchain_community.embeddings import OpenAIEmbeddings

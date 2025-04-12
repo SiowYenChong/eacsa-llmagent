@@ -16,26 +16,13 @@ logger = logging.getLogger(__name__)
 # Load environment variables
 load_dotenv()
 
-# Load from Streamlit secrets or .env fallback
-openai_key = None
-
-# Try loading from Streamlit secrets
+# Set environment variables from Streamlit secrets
 try:
-    openai_key = st.secrets["openai"]["api_key"]
-except Exception as e:
-    logger.warning("Streamlit secrets not found or misconfigured: %s", str(e))
-
-# Fallback to .env
-if not openai_key:
-    openai_key = os.getenv("OPENAI_API_KEY")
-
-# Set environment variables
-if openai_key:
-    os.environ["OPENAI_API_KEY"] = openai_key
+    os.environ["OPENAI_API_KEY"] = st.secrets.openai.api_key
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-else:
-    logger.error("Missing OpenAI API key in both secrets and .env")
-    st.error("🔐 Configuration error: Please set your OpenAI API key in Streamlit secrets or .env")
+except AttributeError as e:
+    logger.error("Missing Streamlit secrets configuration: %s", str(e))
+    st.error("🔐 Configuration error: Missing API key setup")
     st.stop()
 
 # Page configuration
