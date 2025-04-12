@@ -10,6 +10,8 @@ import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+MODEL_DIR = Path("./models")
+MODEL_DIR.mkdir(exist_ok=True)  # Ensure model directory exists
 
 from cultural_awareness.language_detector import LanguageDetector
 from cultural_awareness.code_switch_handler import CodeSwitchHandler
@@ -26,7 +28,14 @@ class SentimentAgent:
         """Load appropriate models based on detected environment"""
         # Edge-optimized ONNX model for mobile
         if ort.get_device() == 'GPU':
-            self.sentiment_analyzer = ort.InferenceSession('models/EdgeDistil-sentiment.onnx')
+                onnx_path = MODEL_DIR/"EdgeDistil-sentiment.onnx"
+                if not onnx_path.exists():
+                    logger.info("Downloading ONNX model...")
+                    onnx_path = self._download_model(
+                        "CodeSwitchEmo/EdgeDistil",
+                        "sentiment.onnx"
+                    )
+                self.sentiment_analyzer = ort.InferenceSession(str(onnx_path))
         else:
             self.sentiment_analyzer = pipeline(
                 "sentiment-analysis",
