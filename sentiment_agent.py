@@ -20,8 +20,8 @@ class SentimentAgent:
     def __init__(self):
         self.language_detector = LanguageDetector()
         self.code_switch_handler = CodeSwitchHandler()
-        self.initialize_models()
         login(token=st.secrets.huggingface.token)
+        self.initialize_models()
 
     def initialize_models(self):
         """Load robust alternative models"""
