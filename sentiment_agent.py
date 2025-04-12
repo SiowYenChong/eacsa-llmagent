@@ -23,24 +23,30 @@ class SentimentAgent:
         self.initialize_models()
 
     def initialize_models(self):
-        """Load appropriate models based on detected environment"""
-        # Edge-optimized ONNX model for mobile
-        if ort.get_device() == 'GPU':
-            self.sentiment_analyzer = ort.InferenceSession('models/EdgeDistil-sentiment.onnx')
-        else:
+        """Load robust alternative models"""
+        try:
+            # Universal sentiment model with better language coverage
             self.sentiment_analyzer = pipeline(
                 "sentiment-analysis",
-                model="UniEmo/universal-emotion",
+                model="cardiffnlp/twitter-roberta-base-sentiment-latest",
+                model_kwargs={"cache_dir": "./models"},
+                max_length=512
+            )
+            
+            # Multilingual emotion model with fallback
+            self.emotion_classifier = pipeline(
+                "text-classification",
+                model="joeddav/distilbert-base-uncased-go-emotions",
+                top_k=None,
+                return_all_scores=True,
                 model_kwargs={"cache_dir": "./models"}
             )
-        
-        # Multilingual emotion model
-        self.emotion_classifier = pipeline(
-            "text-classification",
-            model="UniEmo/multilingual-emotion",
-            top_k=None,
-            return_all_scores=True
-        )
+            
+            logger.info("Successfully loaded core models")
+            
+        except Exception as e:
+            logger.error(f"Model loading failed: {str(e)}")
+            self.load_fallback_models()
 
     def analyze(self, text: str) -> Dict[str, Any]:
         """Enhanced multilingual analysis"""

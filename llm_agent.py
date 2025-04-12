@@ -4,6 +4,7 @@ import streamlit as st
 import logging
 from typing import List, Dict, Any, Optional
 from langchain_openai import ChatOpenAI 
+import numpy as np
 from langchain.schema import HumanMessage, SystemMessage, AIMessage
 
 logger = logging.getLogger(__name__)
