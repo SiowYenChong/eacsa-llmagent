@@ -54,7 +54,7 @@ def import_agents():
         st.stop()
 
 (SentimentAgent, KnowledgeAgent, LLMAgent, 
- SessionManager, DataSanitizer, EmotionVisualizer) = import_agents()
+ SessionManager, DataSanitizer, EmotionVisualizer, HITLManager, EmotionExplainer, LanguageDetector, BiasAuditor) = import_agents()
 
 # Initialize session state
 if 'session_manager' not in st.session_state:
