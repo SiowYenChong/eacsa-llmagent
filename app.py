@@ -4,8 +4,10 @@ import logging
 from datetime import datetime
 import streamlit as st
 from dotenv import load_dotenv
-
-import sentiment_agent
+from collaboration.hitl_manager import HITLManager
+from explainability.emotion_lrp import EmotionExplainer
+from cultural_awareness.language_detector import LanguageDetector
+from cultural_awareness.fairness_audit import BiasAuditor
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,7 +19,7 @@ load_dotenv()
 # Set environment variables from Streamlit secrets
 try:
     os.environ["OPENAI_API_KEY"] = st.secrets.openai.api_key
-    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"  # For macOS libiomp compatibility
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 except AttributeError as e:
     logger.error("Missing Streamlit secrets configuration: %s", str(e))
     st.error("🔐 Configuration error: Missing API key setup")
@@ -52,8 +54,8 @@ def import_agents():
 # Initialize session state
 if 'session_manager' not in st.session_state:
     st.session_state.session_manager = SessionManager()
-if 'debug_data' not in st.session_state:  # Add this line
-    st.session_state.debug_data = {}      # Initialize empty debug data
+if 'debug_data' not in st.session_state:
+    st.session_state.debug_data = {}
 if 'knowledge_agent' not in st.session_state:
     st.session_state.knowledge_agent = None
 if 'sentiment_agent' not in st.session_state:
@@ -62,6 +64,14 @@ if 'llm_agent' not in st.session_state:
     st.session_state.llm_agent = None
 if 'data_sanitizer' not in st.session_state:
     st.session_state.data_sanitizer = DataSanitizer()
+if 'hitl_manager' not in st.session_state:
+    st.session_state.hitl_manager = HITLManager(st.session_state.session_manager)
+if 'cultural_detector' not in st.session_state:
+    st.session_state.cultural_detector = LanguageDetector()
+if 'bias_auditor' not in st.session_state:
+    st.session_state.bias_auditor = BiasAuditor()
+if 'explainer' not in st.session_state:
+    st.session_state.explainer = None
 
 # Initialize agents with caching
 @st.cache_resource
@@ -91,6 +101,12 @@ if st.session_state.knowledge_agent is None:
              session_manager,
              st.session_state.visualizer) = initialize_agents()
             st.session_state.session_manager = session_manager
+            
+            # Initialize explainer after sentiment agent
+            model = st.session_state.sentiment_agent.emotion_classifier.model
+            tokenizer = st.session_state.sentiment_agent.emotion_classifier.tokenizer
+            st.session_state.explainer = EmotionExplainer(model, tokenizer)
+            
         except Exception as e:
             st.error(f"Initialization failed: {str(e)}")
             st.stop()
@@ -128,14 +144,40 @@ def display_rating_buttons(message_index: int):
                         ):
                             st.experimental_rerun()
 
+def _handle_escalation():
+    """Handle human handoff process"""
+    st.session_state.session_manager.add_message_to_current_session(
+        role="assistant",
+        content="🚨 I'm connecting you with a human specialist. Please hold..."
+    )
+    return "🚨 Escalating to human agent..."
+
 def process_user_input(user_query: str):
     """Process user query through enhanced AI pipeline"""
     try:
-        # Sanitize and analyze input
+        # Cross-cultural analysis
+        lang_info = st.session_state.cultural_detector.detect_language(user_query)
         sanitized_query = st.session_state.data_sanitizer.sanitize_text(user_query)
-        # After sentiment analysis
+        
+        # Sentiment analysis
         analysis = st.session_state.sentiment_agent.analyze(sanitized_query)
         tone_guidance = st.session_state.sentiment_agent.generate_tone_guidance(analysis)
+
+        # Bias auditing
+        if st.session_state.bias_auditor:
+            bias_report = st.session_state.bias_auditor.audit(
+                predictions=[analysis], 
+                ground_truth=[]
+            )
+            st.session_state.debug_data['bias_report'] = bias_report
+
+        # HITL escalation check
+        if st.session_state.hitl_manager.check_escalation_needed():
+            return _handle_escalation()
+
+        # Explanation generation
+        explanation = st.session_state.explainer.explain(user_query)
+        st.session_state.visualizer.display_explanations(explanation)
 
         # Convert tone guidance to instruction string
         tone_instruction = f"""
@@ -146,51 +188,45 @@ def process_user_input(user_query: str):
         - Urgency: {tone_guidance['urgency_level']}
         """
 
-        # Add to emotion timeline
+        # Emotion timeline update
         timeline_entry = {
             "timestamp": datetime.now().isoformat(),
-            "sentiment_score": analysis['sentiment']['score'],  # Correct
-            "valence": analysis['valence'],  # New field
+            "sentiment_score": analysis['sentiment']['score'],
+            "valence": analysis['valence'],
             "dominant_emotion": analysis['emotions'][0]['label'] if analysis['emotions'] else 'neutral',
-            "intensity_trend": analysis['intensity_trend']  # New field
-        }
-
+            "intensity_trend": analysis['intensity_trend']
+        }        
         st.session_state.debug_data = {
             'last_analysis': analysis,
             'timeline_entry': timeline_entry,
             'current_timeline': st.session_state.session_manager.current_session['emotion_timeline']
         }
-
-        # Store in session
         st.session_state.session_manager.current_session['emotion_timeline'].append(timeline_entry)
         
-        # Store user message with analytics
+        # Store message with analytics
         st.session_state.session_manager.add_message_to_current_session(
             role="user",
             content=sanitized_query,
             sentiment_score=analysis['sentiment']['score'],
             emotions=analysis['emotions']
         )
-        
-        # Retrieve knowledge context
+
+        # Knowledge retrieval
         context = {"text": "", "sources": []}
-        response_container = st.empty()  # Create empty container first
+        response_container = st.empty()
         
         if st.session_state.knowledge_agent:
             with st.spinner("🔍 Searching knowledge base..."):
                 try:
                     context = st.session_state.knowledge_agent.get_context(sanitized_query)
-                    # Display results outside of status container
-                    # In the knowledge retrieval section (replace the existing context display code):
                     if context.get("sources"):
                         with response_container.container():
                             with st.status("🔍 Analyzing knowledge base...", expanded=True) as status:
                                 st.markdown("### Relevant Information Found")
-                                
                                 for idx, source in enumerate(context["sources"][:3]):
                                     cols = st.columns([1, 10])
                                     with cols[0]:
-                                        st.success("✅")  # Checkmark indicator
+                                        st.success("✅")
                                     with cols[1]:
                                         st.markdown(f"""
                                         **Match {idx+1}**  
@@ -199,96 +235,22 @@ def process_user_input(user_query: str):
                                         ```{source.get('content', 'No content available')[:200]}...```
                                         """)
                                     st.markdown("---")
-                                
-                                status.update(label=f"✅ Found {len(context['sources'])} relevant items", 
-                                            state="complete")
-
+                                status.update(label=f"✅ Found {len(context['sources'])} relevant items", state="complete")
                     else:
                         with st.status("🔍 Knowledge Search", expanded=True) as status:
                             st.warning("No relevant documents found")
                             status.update(label="⚠️ No matches found", state="error")
-
                 except Exception as e:
                     logger.error(f"Knowledge retrieval error: {str(e)}")
                     context["text"] = f"Error: {str(e)}"
 
-        # Handle verification flow separately
-        if context.get("requires_verification"):
-            with st.chat_message("assistant"):
-                st.markdown("Please verify your order details:")
-                
-            with st.form(key="order_verification"):
-                order_number = st.text_input("Order Number")
-                email = st.text_input("Email Address")
-                
-                if st.form_submit_button("Verify"):
-                    # Process verification with raw (unsanitized) input
-                    order_details = st.session_state.knowledge_agent.get_order_details(
-                        order_number, 
-                        email
-                    )
-                    if order_details:
-                        st.session_state.session_manager.add_message_to_current_session(
-                            role="assistant",
-                            content=f"Order Status: {order_details['status']}"
-                        )
-                    else:
-                        st.error("Verification failed")
-            return  # Exit early for verification flow
-        
-        # Generate tone instruction
-        try:
-            tone_guidance = st.session_state.sentiment_agent.generate_tone_guidance(analysis)
-        except KeyError as e:
-            logger.error(f"Tone guidance error: {str(e)}")
-            tone_instruction = f"""
-            Respond using:
-            - Base tone: {tone_guidance['base_tone']}
-            - Strategy: {tone_guidance['emotional_strategy']['structure']}
-            - Empathy: {tone_guidance['emotional_strategy']['empathy']}/5
-            - Urgency: {tone_guidance['urgency_level']}
-            """
-        
-        # Display sentiment analysis
-        with st.status("💭 Analyzing emotions...", expanded=True) as status:
-            try:
-                cols = st.columns(2)
-                with cols[0]:
-                    st.markdown("### Customer Sentiment")
-                    sentiment = analysis["sentiment"]
-                    st.metric(
-                        label="Dominant Mood",
-                        value=sentiment["label"].upper(),
-                        delta=f"Confidence: {sentiment['score']:.2%}"
-                    )
-                with cols[1]:
-                    st.markdown("### Emotional Breakdown")
-                    if analysis["emotions"]:
-                        for emotion in analysis["emotions"][:3]:  # Show top 3 emotions
-                            st.markdown(
-                                f"**{emotion['label'].title()}**  \n"
-                                f"`{emotion['score']:.2%}` confidence"
-                            )
-                            st.progress(
-                                emotion["score"],
-                                text=f"Intensity Level: {emotion['score']:.0%}"
-                            )
-                    else:
-                        st.warning("No strong emotions detected")
-                status.update(label="✅ Emotional analysis completed", state="complete")
-            except Exception as e:
-                logger.error(f"Sentiment display error: {str(e)}")
-                st.error("Failed to display emotion analysis")
-
-
-        # Generate and display response
+        # Response generation
         response_content = ""
         if st.session_state.llm_agent:
             response_container = st.empty()
             displayed_response = ""
             
             try:
-                # Update the response generation call:
                 for chunk in st.session_state.llm_agent.generate_response_stream(
                     query=sanitized_query,
                     context={
@@ -306,14 +268,12 @@ def process_user_input(user_query: str):
                     response_container.markdown(displayed_response + "▌")
                     
                 response_container.markdown(displayed_response)
-                
-                # Store assistant response
                 st.session_state.session_manager.add_message_to_current_session(
                     role="assistant",
                     content=displayed_response
                 )
                 
-                # Add resolution controls
+                # Resolution controls
                 message_index = len(st.session_state.session_manager.current_session['history']) - 1
                 st.markdown("---")
                 cols = st.columns([1, 4])
@@ -349,7 +309,7 @@ with st.sidebar:
     
     st.markdown("---")
     if st.checkbox("Show debug data"):
-        if st.session_state.debug_data:  # Check if data exists
+        if st.session_state.debug_data:
             st.write("### Debug Information")
             st.write(st.session_state.debug_data)
         else:
@@ -359,10 +319,7 @@ with st.sidebar:
     
     st.markdown("---")
     st.write("### Session Management")
-    
-    # Get fresh session list every render
     current_sessions = st.session_state.session_manager.get_all_session_titles()
-    
     selected_session = st.selectbox(
         "Active Sessions",
         ["New Session"] + current_sessions,
@@ -373,9 +330,8 @@ with st.sidebar:
         new_name = st.text_input("Session Name:", "Untitled Conversation")
         if st.button("Create New Session"):
             st.session_state.session_manager.create_session(new_name)
-            st.rerun()  # Force refresh after creation
+            st.rerun()
     else:
-        # Switch to existing session logic
         if st.button("Switch to Selected Session"):
             selected_session_obj = st.session_state.session_manager.get_session_by_title(selected_session)
             st.session_state.session_manager.current_session = selected_session_obj
@@ -402,8 +358,6 @@ for idx, message in enumerate(st.session_state.session_manager.current_session.g
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
         st.caption(f"{datetime.fromisoformat(message['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        # Show resolution controls immediately below message
         if message["role"] == "assistant":
             display_rating_buttons(idx)
 
@@ -442,6 +396,11 @@ spacy==3.7.0
 typing-extensions==4.12.0
 huggingface_hub==0.16.4
 httpx==0.27.2
+onnxruntime==1.16.3
+langdetect==1.0.9
+regex==2023.12.25
+captum==0.7.0
+fairlearn==0.8.0
 """)
 
 if not os.path.exists("vercel.json"):
@@ -450,5 +409,3 @@ if not os.path.exists("vercel.json"):
             "builds": [{"src": "app.py", "use": "@vercel/python"}],
             "routes": [{"src": "/(.*)", "dest": "app.py"}]
         }, f, indent=2)
-
-        

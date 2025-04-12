@@ -125,3 +125,22 @@ class EmotionVisualizer:
                     showarrow=True
                 ))
         return events
+    
+    # Add new explanation visualization
+    def display_explanations(self, explanation: dict):
+        with st.expander("🧠 AI Decision Breakdown"):
+            st.write("### Emotion Attribution Analysis")
+            df = pd.DataFrame({
+                'Token': explanation['tokens'],
+                'Relevance Score': explanation['attributions']
+            })
+            fig = px.bar(df, x='Token', y='Relevance Score', 
+                        color='Relevance Score',
+                        color_continuous_scale='RdBu')
+            st.plotly_chart(fig)
+            
+            st.write("**Key Influences:**")
+            st.markdown("""
+            - Words with positive scores increased emotion detection confidence
+            - Negative scores indicate reducing influence on the final decision
+            """)

@@ -11,54 +11,47 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+from cultural_awareness.language_detector import LanguageDetector
+from cultural_awareness.code_switch_handler import CodeSwitchHandler
+import onnxruntime as ort
+
 class SentimentAgent:
-    """Advanced sentiment analysis with multi-model integration and tone guidance"""
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
     def __init__(self):
-        self.sentiment_history = []
-        self.intensity_window = []
-        login(token=st.secrets.huggingface.token)
-        try:
-            # Initialize sentiment analysis model
+        self.language_detector = LanguageDetector()
+        self.code_switch_handler = CodeSwitchHandler()
+        self.initialize_models()
+
+    def initialize_models(self):
+        """Load appropriate models based on detected environment"""
+        # Edge-optimized ONNX model for mobile
+        if ort.get_device() == 'GPU':
+            self.sentiment_analyzer = ort.InferenceSession('models/EdgeDistil-sentiment.onnx')
+        else:
             self.sentiment_analyzer = pipeline(
                 "sentiment-analysis",
-                model="cardiffnlp/twitter-roberta-base-sentiment-latest",
-                model_kwargs={"cache_dir": "./models"}, 
-                token=True 
+                model="UniEmo/universal-emotion",
+                model_kwargs={"cache_dir": "./models"}
             )
-            
-            # Verify sentiment model with case-insensitive check
-            test_output = self.sentiment_analyzer("I love this!")
-            if not isinstance(test_output, list) or len(test_output) == 0:
-                raise ValueError("Invalid sentiment model output")
-                
-            test_result = test_output[0]
-            received_label = test_result['label'].lower()
-            allowed_labels = {'negative', 'neutral', 'positive'}
-            
-            if received_label not in allowed_labels:
-                raise ValueError(f"Unexpected sentiment label: {test_result['label']}")
-
-            logger.info("Sentiment model initialized successfully")
-            
-            # Initialize emotion classifier
-            self.emotion_classifier = pipeline(
-                "text-classification",
-                model="j-hartmann/emotion-english-distilroberta-base",
-                top_k=None,
-                return_all_scores=True,
-                model_kwargs={"cache_dir": "./models"}, 
-                token=True 
-            )
-            
-            logger.info("All models loaded successfully")
-
-        except Exception as e:
-            logger.error(f"Model initialization failed: {str(e)}")
-            raise
+        
+        # Multilingual emotion model
+        self.emotion_classifier = pipeline(
+            "text-classification",
+            model="UniEmo/multilingual-emotion",
+            top_k=None,
+            return_all_scores=True
+        )
 
     def analyze(self, text: str) -> Dict[str, Any]:
-        """Comprehensive analysis with emotion tracking"""
+        """Enhanced multilingual analysis"""
+        lang_info = self.language_detector.detect_language(text)
+        
+        if lang_info['is_code_switched']:
+            return self._handle_code_switched(text, lang_info)
+        
+        # Use appropriate model based on language
+        if lang_info['primary_lang'] not in ['en', 'es', 'zh']:
+            return self._fallback_analysis(text)
         if not text.strip():
             return self._default_analysis()
             
