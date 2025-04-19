@@ -428,8 +428,18 @@ def sidebar_interface():
         
         current_session = get_current_session()
         # List existing sessions
+        # List existing sessions - Show only 3 most recent
         st.write("#### Active Sessions")
-        for session in st.session_state.session_manager.list_sessions():
+        all_sessions = st.session_state.session_manager.list_sessions()
+        
+        # Sort sessions by creation date (newest first)
+        recent_sessions = sorted(
+            all_sessions,
+            key=lambda x: datetime.fromisoformat(x['created']),
+            reverse=True
+        )[:3]  # Get top 3 most recent
+
+        for session in recent_sessions:
             cols = st.columns([3, 1])
             with cols[0]:
                 st.write(f"**{session['title']}**")
@@ -444,6 +454,29 @@ def sidebar_interface():
                     args=(session['id'],)
                 ):
                     pass
+
+        # Add option to view all sessions
+        if len(all_sessions) > 3:
+            if st.button("📜 Show All Sessions", key="show_all_sessions"):
+                st.session_state.show_all_sessions = True
+                
+        if st.session_state.get('show_all_sessions', False):
+            st.write("#### All Sessions")
+            for session in all_sessions:
+                cols = st.columns([3, 1])
+                with cols[0]:
+                    st.write(f"**{session['title']}**")
+                    st.caption(f"Created: {datetime.fromisoformat(session['created']).strftime('%Y-%m-%d %H:%M')}")
+                    st.caption(f"Messages: {session['message_count']}")
+                with cols[1]:
+                    if st.button(
+                        "🔁",
+                        key=f"switch_{session['id']}",
+                        help="Switch to this session",
+                        on_click=switch_session,
+                        args=(session['id'],)
+                    ):
+                        pass
         
         st.markdown("---")
 
