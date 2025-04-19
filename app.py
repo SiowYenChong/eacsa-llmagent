@@ -464,7 +464,9 @@ def sidebar_interface():
             st.button(
                 "📜 Show All Sessions" if not st.session_state.show_all_sessions else "📜 Hide All Sessions",
                 key="toggle_all_sessions",
-                on_click=lambda: st.session_state.update({"show_all_sessions": not st.session_state.show_all_sessions})
+                on_click=lambda: st.session_state.update(
+                    show_all_sessions=not st.session_state.show_all_sessions
+                )
             )
                 
         if st.session_state.show_all_sessions:
