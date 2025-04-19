@@ -60,6 +60,8 @@ def import_agents():
 # Initialize session state
 if 'session_manager' not in st.session_state:
     st.session_state.session_manager = SessionManager()
+    
+if 'current_session_id' not in st.session_state:
     st.session_state.current_session_id = None
 
 if 'debug_data' not in st.session_state:
@@ -121,7 +123,7 @@ def initialize_system():
                 # Create initial session if none exists
                 if not st.session_state.session_manager.sessions:
                     new_session = st.session_state.session_manager.create_session("Initial Session")
-                    st.session_state.current_session_id = new_session['id']  # Direct ID access
+                    st.session_state.current_session_id = new_session['id']
                     
             except Exception as e:
                 st.error(f"Initialization failed: {str(e)}")
@@ -130,9 +132,10 @@ def initialize_system():
 initialize_system()
 
 def get_current_session():
-    return st.session_state.session_manager.get_session(
-        st.session_state.current_session_id
-    )
+    if not st.session_state.current_session_id:
+        new_session = st.session_state.session_manager.create_session("New Session")
+        st.session_state.current_session_id = new_session['id']
+    return st.session_state.session_manager.get_session(st.session_state.current_session_id)
 
 def create_new_session(session_name: str):
     new_session = st.session_state.session_manager.create_session(session_name)
@@ -184,6 +187,8 @@ def process_user_input(user_query: str, session_id: str):
         
         # Sentiment analysis
         analysis = st.session_state.sentiment_agent.analyze(sanitized_query)
+        # Sentiment analysis
+        analysis = st.session_state.sentiment_agent.analyze(sanitized_query)
         tone_guidance = st.session_state.sentiment_agent.generate_tone_guidance(analysis)
 
         if 'explainer' not in st.session_state:
@@ -200,7 +205,6 @@ def process_user_input(user_query: str, session_id: str):
         # HITL escalation check
         if st.session_state.hitl_manager.check_escalation_needed():
             return _handle_escalation()
-        
 
         # Explanation generation
         explanation = st.session_state.explainer.explain(user_query)
@@ -222,7 +226,7 @@ def process_user_input(user_query: str, session_id: str):
             "valence": analysis['valence'],
             "dominant_emotion": analysis['emotions'][0]['label'] if analysis['emotions'] else 'neutral',
             "intensity_trend": analysis['intensity_trend']
-        }        
+        }
         st.session_state.debug_data = {
             'last_analysis': analysis,
             'timeline_entry': timeline_entry,
@@ -239,6 +243,10 @@ def process_user_input(user_query: str, session_id: str):
             sentiment_score=analysis['sentiment']['score'],
             emotions=analysis['emotions']
         )
+        
+        # Update timeline directly in session
+        session = st.session_state.session_manager.get_session(session_id)
+        session['emotion_timeline'].append(timeline_entry)
 
         # Knowledge retrieval
         context = {"text": "", "sources": []}
@@ -272,8 +280,8 @@ def process_user_input(user_query: str, session_id: str):
                 except Exception as e:
                     logger.error(f"Knowledge retrieval error: {str(e)}")
                     context["text"] = f"Error: {str(e)}"
-
-        # Generate tone instruction
+                
+                 # Generate tone instruction
                 try:
                     tone_guidance = st.session_state.sentiment_agent.generate_tone_guidance(analysis)
                 except KeyError as e:
@@ -334,31 +342,34 @@ def process_user_input(user_query: str, session_id: str):
                             'valence': analysis['valence']
                         }
                     },
-                    history=st.session_state.session_manager.current_session['history'],
+                    history=session['history'],
                     tone_instruction=tone_instruction
                 ):
                     displayed_response += chunk
                     response_container.markdown(displayed_response + "▌")
                     
                 response_container.markdown(displayed_response)
-                st.session_state.session_manager.add_message_to_current_session(
+                
+                # Store assistant response
+                st.session_state.session_manager.add_message_to_session(
+                    session_id=session_id,
                     role="assistant",
                     content=displayed_response
                 )
                 
                 # Resolution controls
-                message_index = len(st.session_state.session_manager.current_session['history']) - 1
+                message_index = len(session['history']) - 1
                 st.markdown("---")
                 cols = st.columns([1, 4])
                 with cols[0]:
                     if st.button("✅ Mark Resolved", 
                             key=f"resolve_{message_index}",
                             help="Mark this response as finalized"):
-                        st.session_state.session_manager.mark_message_resolved(message_index)
+                        st.session_state.session_manager.mark_message_resolved(session_id, message_index)
                         st.rerun()
                 with cols[1]:
-                    if st.session_state.session_manager.current_session['history'][message_index].get('resolved'):
-                        display_rating_buttons(message_index)
+                    if session['history'][message_index].get('resolved'):
+                        display_rating_buttons(session_id, message_index)
                     else:
                         st.caption("Rate resolution after marking resolved")
                         
@@ -372,7 +383,6 @@ def process_user_input(user_query: str, session_id: str):
         logger.error(f"Processing error: {str(e)}")
         return f"System error: {str(e)}"
 
-# Sidebar components
 def sidebar_interface():
     with st.sidebar:
         st.markdown("""
@@ -393,11 +403,11 @@ def sidebar_interface():
         
         # List existing sessions
         st.write("#### Active Sessions")
-        for session in st.session_state.session_manager.sessions:
+        for session in st.session_state.session_manager.list_sessions():
             cols = st.columns([3, 1])
             with cols[0]:
                 st.write(f"**{session['title']}**")
-                st.caption(f"Created: {datetime.fromisoformat(session['created_at']).strftime('%Y-%m-%d %H:%M')}")
+                st.caption(f"Messages: {session['message_count']}")
             with cols[1]:
                 if st.button(
                     "🔁",
@@ -412,7 +422,8 @@ def sidebar_interface():
         if st.checkbox("📈 Show Emotion Analytics"):
             current_session = get_current_session()
             st.session_state.visualizer.display_analytics_dashboard(current_session)
-            
+      
+        
         # Session tools
         if st.button("🧹 Clear Current Session"):
             st.session_state.session_manager.clear_session(st.session_state.current_session_id)
@@ -492,6 +503,7 @@ langdetect==1.0.9
 regex==2023.12.25
 captum==0.7.0
 fairlearn==0.8.0
+uuid==1.30
 """)
 
 if not os.path.exists("vercel.json"):
