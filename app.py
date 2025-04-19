@@ -204,7 +204,7 @@ def process_user_input(user_query: str, session_id: str):
             st.session_state.debug_data['bias_report'] = bias_report
 
         # HITL escalation check
-        if st.session_state.hitl_manager.check_escalation_needed():
+        if st.session_state.hitl_manager.check_escalation_needed(st.session_state.current_session_id):
             return _handle_escalation()
 
         # Explanation generation
