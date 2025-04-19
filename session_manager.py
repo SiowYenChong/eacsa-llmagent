@@ -69,17 +69,9 @@ class SessionManager:
             'rating': None
         }
         
-        if role == 'assistant':
-            message['response_quality'] = {
-                'empathy_score': None,
-                'resolution_score': None,
-                'sentiment_alignment': None
-            }
-        
         session['history'].append(message)
         session['message_count'] = len(session['history'])
         session['last_updated'] = datetime.now().isoformat()
-        logger.info(f"Added {role} message to session {session_id}")
 
         # Update emotion timeline
         if sentiment_score is not None and emotions:
@@ -90,7 +82,6 @@ class SessionManager:
                 'emotion_intensity': emotions[0]['score'] if emotions else 0.0
             }
             session['emotion_timeline'].append(timeline_entry)
-            logger.debug(f"Updated emotion timeline for {session_id}")
 
     def mark_message_resolved(self, session_id: str, message_index: int, rating: int = None):
         """Mark message as resolved with optional rating"""
@@ -101,9 +92,6 @@ class SessionManager:
             if rating is not None and 1 <= rating <= 5:
                 session['history'][message_index]['rating'] = rating
             session['last_updated'] = datetime.now().isoformat()
-            logger.info(f"Marked message {message_index} resolved in {session_id}")
-        else:
-            logger.error(f"Invalid message index {message_index} for session {session_id}")
 
     def clear_session(self, session_id: str) -> None:
         """Reset session history while preserving metadata"""
@@ -112,22 +100,3 @@ class SessionManager:
         session['emotion_timeline'] = []
         session['message_count'] = 0
         session['last_updated'] = datetime.now().isoformat()
-        logger.info(f"Cleared session {session_id}")
-
-    def list_sessions(self) -> List[Dict]:
-        """Get session metadata for UI display"""
-        return [{
-            'id': s['id'],
-            'title': s['title'],
-            'created': s['created_at'],
-            'updated': s['last_updated'],
-            'message_count': s['message_count']
-        } for s in self.sessions]
-
-    def get_session_by_title(self, title: str) -> Optional[Dict[str, Any]]:
-        """Legacy title-based lookup (not recommended)"""
-        return next((s for s in self.sessions if s['title'] == title), None)
-
-    def session_exists(self, session_id: str) -> bool:
-        """Check if session ID is valid"""
-        return any(s['id'] == session_id for s in self.sessions)
