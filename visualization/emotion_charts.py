@@ -7,8 +7,8 @@ class EmotionVisualizer:
     def __init__(self, session_manager):
         self.session_manager = session_manager
     
-    def display_analytics_dashboard(self):
-        timeline = self.session_manager.current_session.get('emotion_timeline', [])
+    def display_analytics_dashboard(self, session):  # Add session parameter
+        timeline = session.get('emotion_timeline', [])  # Use passed session
         
         if len(timeline) < 2:
             st.warning("Continue chatting to build emotion insights!")
@@ -16,6 +16,9 @@ class EmotionVisualizer:
         
         try:
             df = pd.DataFrame(timeline)
+            # Convert numeric fields (add missing fields)
+            df['sentiment_score'] = pd.to_numeric(df['score'], errors='coerce')  # Map score to sentiment_score
+            df['dominant_emotion'] = df['dominant_emotion'].fillna('neutral')
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             
             with st.expander("📈 Emotion Timeline", expanded=True):

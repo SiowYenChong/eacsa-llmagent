@@ -76,7 +76,7 @@ class SessionManager:
         if sentiment_score is not None and emotions:
             timeline_entry = {
                 'timestamp': datetime.now().isoformat(),
-                'score': sentiment_score,
+                'sentiment_score': sentiment_score,  # Changed from 'score'
                 'dominant_emotion': emotions[0]['label'] if emotions else 'neutral',
                 'emotion_intensity': emotions[0]['score'] if emotions else 0.0
             }

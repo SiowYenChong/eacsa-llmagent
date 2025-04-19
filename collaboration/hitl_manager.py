@@ -6,13 +6,13 @@ class HITLManager:
         'financial_impact': 500.00
     }
     
-    def __init__(self, session_manager):  # Remove current_session_id from init
+    def __init__(self, session_manager):  # Remove current_session_id parameter
         self.session_manager = session_manager
 
     def check_escalation_needed(self, session_id):  # Add session_id parameter
         """Determine if human intervention required"""
         current_session = self.session_manager.get_session(session_id)
-        timeline = current_session['emotion_timeline']
+        timeline = current_session['emotion_timeline']  
         
         # Check recent strong negative emotions
         recent_anger = any(

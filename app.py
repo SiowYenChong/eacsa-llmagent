@@ -162,7 +162,7 @@ def display_rating_buttons(session_id: str, message_index: int):
                 type="primary"
             ):
                 st.session_state.session_manager.mark_message_resolved(session_id, message_index)
-                st.rerun()
+
     with cols[1]:
         if current_message.get('resolved'):
             if current_message.get('rating'):
@@ -448,7 +448,11 @@ def sidebar_interface():
         st.markdown("---")
         if st.checkbox("📈 Show Emotion Analytics"):
             current_session = get_current_session()
-            st.session_state.visualizer.display_analytics_dashboard(current_session)
+            try:
+                st.session_state.visualizer.display_analytics_dashboard(current_session)
+            except Exception as e:
+                st.error(f"Failed to load analytics: {str(e)}")
+                logger.exception("Analytics error")
         
         # Session tools
         if st.button("🧹 Clear Current Session", key="clear_session"):
