@@ -52,7 +52,7 @@ class SessionManager:
         } for s in self.sessions]
 
     def add_message_to_session(self, session_id: str, role: str, content: str, 
-                             sentiment_score: float = None, emotions: list = None):
+                         sentiment_score: float = None, emotions: list = None):
         """Add message to session with validation"""
         session = self.get_session(session_id)
         

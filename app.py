@@ -448,6 +448,7 @@ def sidebar_interface():
         st.markdown("---")
         if st.checkbox("📈 Show Emotion Analytics"):
             current_session = get_current_session()
+            st.session_state.visualizer.display_analytics_dashboard(current_session)  # Pass session
             try:
                 st.session_state.visualizer.display_analytics_dashboard(current_session)
             except Exception as e:
