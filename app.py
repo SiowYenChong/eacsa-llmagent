@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import uuid
 from datetime import datetime
 import streamlit as st
 from dotenv import load_dotenv
@@ -59,24 +60,21 @@ def import_agents():
 # Initialize session state
 if 'session_manager' not in st.session_state:
     st.session_state.session_manager = SessionManager()
+    st.session_state.current_session_id = None
+
 if 'debug_data' not in st.session_state:
     st.session_state.debug_data = {}
-if 'knowledge_agent' not in st.session_state:
-    st.session_state.knowledge_agent = None
-if 'sentiment_agent' not in st.session_state:
-    st.session_state.sentiment_agent = None
-if 'llm_agent' not in st.session_state:
-    st.session_state.llm_agent = None
-if 'data_sanitizer' not in st.session_state:
-    st.session_state.data_sanitizer = DataSanitizer()
-if 'hitl_manager' not in st.session_state:
-    st.session_state.hitl_manager = HITLManager(st.session_state.session_manager)
-if 'cultural_detector' not in st.session_state:
-    st.session_state.cultural_detector = LanguageDetector()
-if 'bias_auditor' not in st.session_state:
-    st.session_state.bias_auditor = BiasAuditor()
-if 'explainer' not in st.session_state:
-    st.session_state.explainer = None
+
+# Agent initialization state
+agent_initialization_fields = [
+    'knowledge_agent', 'sentiment_agent', 'llm_agent',
+    'data_sanitizer', 'hitl_manager', 'cultural_detector',
+    'bias_auditor', 'explainer'
+]
+
+for field in agent_initialization_fields:
+    if field not in st.session_state:
+        st.session_state[field] = None
 
 # Initialize agents with caching
 @st.cache_resource
@@ -97,28 +95,58 @@ def initialize_agents():
         st.error("System initialization failed. Please check logs.")
         st.stop()
 
-if st.session_state.knowledge_agent is None:
-    with st.spinner("🚀 Loading AI components..."):
-        try:
-            (st.session_state.knowledge_agent,
-             st.session_state.sentiment_agent,
-             st.session_state.llm_agent,
-             session_manager,
-             st.session_state.visualizer) = initialize_agents()
-            st.session_state.session_manager = session_manager
-            
-            # Initialize explainer after sentiment agent
-            model = st.session_state.sentiment_agent.emotion_classifier.model
-            tokenizer = st.session_state.sentiment_agent.emotion_classifier.tokenizer
-            st.session_state.explainer = EmotionExplainer(model, tokenizer)
-            
-        except Exception as e:
-            st.error(f"Initialization failed: {str(e)}")
-            st.stop()
+def initialize_system():
+    if None in [st.session_state[field] for field in agent_initialization_fields]:
+        with st.spinner("🚀 Loading AI components..."):
+            try:
+                knowledge_agent, sentiment_agent, llm_agent, session_manager, visualizer = initialize_agents()
+                
+                # Initialize all agents
+                st.session_state.update({
+                    'knowledge_agent': knowledge_agent,
+                    'sentiment_agent': sentiment_agent,
+                    'llm_agent': llm_agent,
+                    'session_manager': session_manager,
+                    'visualizer': visualizer,
+                    'data_sanitizer': DataSanitizer(),
+                    'hitl_manager': HITLManager(session_manager),
+                    'cultural_detector': LanguageDetector(),
+                    'bias_auditor': BiasAuditor(),
+                    'explainer': EmotionExplainer(
+                        sentiment_agent.emotion_classifier.model,
+                        sentiment_agent.emotion_classifier.tokenizer
+                    )
+                })
+                
+                # Create initial session if none exists
+                if not st.session_state.session_manager.sessions:
+                    st.session_state.current_session_id = st.session_state.session_manager.create_session(
+                        "Initial Session"
+                    )['id']
+                    
+            except Exception as e:
+                st.error(f"Initialization failed: {str(e)}")
+                st.stop()
 
-def display_rating_buttons(message_index: int):
-    """Integrated rating system"""
-    current_message = st.session_state.session_manager.current_session['history'][message_index]
+initialize_system()
+
+def get_current_session():
+    return st.session_state.session_manager.get_session(
+        st.session_state.current_session_id
+    )
+
+def create_new_session(session_name: str):
+    new_session = st.session_state.session_manager.create_session(session_name)
+    st.session_state.current_session_id = new_session['id']
+    st.rerun()
+
+def switch_session(session_id: str):
+    st.session_state.current_session_id = session_id
+    st.rerun()
+
+def display_rating_buttons(session_id: str, message_index: int):
+    session = st.session_state.session_manager.get_session(session_id)
+    current_message = session['history'][message_index]
     
     st.markdown("---")
     cols = st.columns([2, 3])
@@ -126,11 +154,12 @@ def display_rating_buttons(message_index: int):
         if not current_message.get('resolved'):
             if st.button(
                 "✅ Mark Resolved",
-                key=f"resolve_{message_index}",
+                key=f"resolve_{session_id}_{message_index}",
                 help="Confirm this response solved your issue",
                 type="primary"
             ):
-                st.session_state.session_manager.mark_message_resolved(message_index)
+                st.session_state.session_manager.mark_message_resolved(session_id, message_index)
+                st.rerun()
     with cols[1]:
         if current_message.get('resolved'):
             if current_message.get('rating'):
@@ -142,23 +171,13 @@ def display_rating_buttons(message_index: int):
                     with rating_cols[i-1]:
                         if st.button(
                             f"{i}⭐",
-                            key=f"rate_{message_index}_{i}",
-                            on_click=lambda i=i: st.session_state.session_manager.mark_message_resolved(
-                                message_index, rating=i
-                            )
+                            key=f"rate_{session_id}_{message_index}_{i}",
+                            on_click=lambda sid=session_id, mi=message_index, r=i: 
+                                st.session_state.session_manager.mark_message_resolved(sid, mi, r)
                         ):
-                            st.experimental_rerun()
+                            st.rerun()
 
-def _handle_escalation():
-    """Handle human handoff process"""
-    st.session_state.session_manager.add_message_to_current_session(
-        role="assistant",
-        content="🚨 I'm connecting you with a human specialist. Please hold..."
-    )
-    return "🚨 Escalating to human agent..."
-
-def process_user_input(user_query: str):
-    """Process user query through enhanced AI pipeline"""
+def process_user_input(user_query: str, session_id: str):
     try:
         # Cross-cultural analysis
         lang_info = st.session_state.cultural_detector.detect_language(user_query)
@@ -353,76 +372,91 @@ def process_user_input(user_query: str):
         return f"System error: {str(e)}"
 
 # Sidebar components
-with st.sidebar:
-    st.markdown("""
-    <div style='text-align: center;'>
-        <h2>📊 Analytics Dashboard</h2>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    if st.checkbox("Show debug data"):
-        if st.session_state.debug_data:
+def sidebar_interface():
+    with st.sidebar:
+        st.markdown("""
+        <div style='text-align: center;'>
+            <h2>📊 Analytics Dashboard</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Session Management
+        st.write("### Session Management")
+        
+        # Create new session
+        new_name = st.text_input("New Session Name:", "Untitled Conversation")
+        if st.button("➕ Create New Session"):
+            create_new_session(new_name)
+        
+        # List existing sessions
+        st.write("#### Active Sessions")
+        for session in st.session_state.session_manager.sessions:
+            cols = st.columns([3, 1])
+            with cols[0]:
+                st.write(f"**{session['title']}**")
+                st.caption(f"Created: {datetime.fromisoformat(session['created_at']).strftime('%Y-%m-%d %H:%M')}")
+            with cols[1]:
+                if st.button(
+                    "🔁",
+                    key=f"switch_{session['id']}",
+                    help="Switch to this session",
+                    on_click=switch_session,
+                    args=(session['id'],)
+                ):
+                    pass
+        
+        st.markdown("---")
+        
+        # Session tools
+        if st.button("🧹 Clear Current Session"):
+            st.session_state.session_manager.clear_session(st.session_state.current_session_id)
+            st.rerun()
+            
+        st.download_button(
+            "📥 Export Conversation",
+            data=json.dumps(get_current_session(), indent=2),
+            file_name="conversation.json",
+            mime="application/json"
+        )
+        
+        # Debug tools
+        st.markdown("---")
+        if st.checkbox("Show debug data"):
             st.write("### Debug Information")
             st.write(st.session_state.debug_data)
-        else:
-            st.warning("No debug data available yet - chat to generate!")
-    if st.checkbox("📈 Show Emotion Analytics"):
-        st.session_state.visualizer.display_analytics_dashboard()
-    
-    st.markdown("---")
-    st.write("### Session Management")
-    current_sessions = st.session_state.session_manager.get_all_session_titles()
-    selected_session = st.selectbox(
-        "Active Sessions",
-        ["New Session"] + current_sessions,
-        key="session_selector"
-    )
-    
-    if selected_session == "New Session":
-        new_name = st.text_input("Session Name:", "Untitled Conversation")
-        if st.button("Create New Session"):
-            st.session_state.session_manager.create_session(new_name)
-            st.rerun()
-    else:
-        if st.button("Switch to Selected Session"):
-            selected_session_obj = st.session_state.session_manager.get_session_by_title(selected_session)
-            st.session_state.session_manager.current_session = selected_session_obj
-            st.rerun()
-    
-    st.markdown("---")
-    if st.button("🧹 Clear Current Session"):
-        st.session_state.session_manager.clear_current_session()
-        st.rerun()
-    
-    st.download_button(
-        "📥 Export Conversation",
-        data=json.dumps(st.session_state.session_manager.current_session, indent=2),
-        file_name="conversation.json",
-        mime="application/json"
-    )
+            
+        if st.checkbox("📈 Show Emotion Analytics"):
+            st.session_state.visualizer.display_analytics_dashboard(get_current_session())
 
-# Main interface
-st.title("🤖 AI Customer Support Assistant")
-st.caption("Enhanced with Emotional Intelligence and Context Awareness")
-
-# Display chat history
-for idx, message in enumerate(st.session_state.session_manager.current_session.get('history', [])):
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-        st.caption(f"{datetime.fromisoformat(message['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}")
-        if message["role"] == "assistant":
-            display_rating_buttons(idx)
-
-# Input handling
-if prompt := st.chat_input("How can I help you today?"):
-    with st.chat_message("user"):
-        st.markdown(prompt)
+def main_interface():
+    st.title("🤖 AI Customer Support Assistant")
+    st.caption("Enhanced with Emotional Intelligence and Context Awareness")
     
-    with st.chat_message("assistant"):
-        response = process_user_input(prompt)
-        if response:
-            st.markdown(response)
+    current_session = get_current_session()
+    
+    # Display chat history
+    for idx, message in enumerate(current_session.get('history', [])):
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+            st.caption(f"{datetime.fromisoformat(message['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}")
+            if message["role"] == "assistant":
+                display_rating_buttons(current_session['id'], idx)
+    
+    # Input handling
+    if prompt := st.chat_input("How can I help you today?"):
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        with st.chat_message("assistant"):
+            response = process_user_input(prompt, current_session['id'])
+            if response:
+                st.markdown(response)
+
+# Run the app
+sidebar_interface()
+main_interface()
 
 # Deployment configuration
 if not os.path.exists("requirements.txt"):
