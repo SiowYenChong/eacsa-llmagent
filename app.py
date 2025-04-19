@@ -455,12 +455,19 @@ def sidebar_interface():
                 ):
                     pass
 
+        if 'show_all_sessions' not in st.session_state:
+            st.session_state.show_all_sessions = False
+
+        # Add option to view all sessions
         # Add option to view all sessions
         if len(all_sessions) > 3:
-            if st.button("📜 Show All Sessions", key="show_all_sessions"):
-                st.session_state.show_all_sessions = True
+            st.button(
+                "📜 Show All Sessions" if not st.session_state.show_all_sessions else "📜 Hide All Sessions",
+                key="toggle_all_sessions",
+                on_click=lambda: st.session_state.update({"show_all_sessions": not st.session_state.show_all_sessions})
+            )
                 
-        if st.session_state.get('show_all_sessions', False):
+        if st.session_state.show_all_sessions:
             st.write("#### All Sessions")
             for session in all_sessions:
                 cols = st.columns([3, 1])
@@ -471,7 +478,7 @@ def sidebar_interface():
                 with cols[1]:
                     if st.button(
                         "🔁",
-                        key=f"switch_{session['id']}",
+                        key=f"switch_all_{session['id']}",  # Unique key prefix
                         help="Switch to this session",
                         on_click=switch_session,
                         args=(session['id'],)
