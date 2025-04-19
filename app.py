@@ -258,8 +258,7 @@ def process_user_input(user_query: str, session_id: str):
             'timeline_entry': timeline_entry,
             'current_timeline': get_current_session()['emotion_timeline']
         }
-        current_session = st.session_state.session_manager.get_session(session_id)
-        current_session['emotion_timeline'].append(timeline_entry)
+        session['emotion_timeline'].append(timeline_entry)
         
         # Store message with analytics
         st.session_state.session_manager.add_message_to_session(

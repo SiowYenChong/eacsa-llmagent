@@ -15,12 +15,12 @@ class EmotionVisualizer:
             return
         
         try:
-            # Convert timeline data to DataFrame
             df = pd.DataFrame(timeline)
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
             
-            # Ensure numeric conversion for sentiment values
-            df['sentiment_score'] = pd.to_numeric(df['sentiment_score'], errors='coerce')
-            df['emotion_intensity'] = pd.to_numeric(df['emotion_intensity'], errors='coerce')
+            # ENSURE NUMERIC COLUMNS
+            df['sentiment_score'] = pd.to_numeric(df['sentiment_score'])
+            df['emotion_intensity'] = pd.to_numeric(df['emotion_intensity'])
             
             # Convert timestamp
             df['timestamp'] = pd.to_datetime(df['timestamp'])
