@@ -39,7 +39,8 @@ class SessionManager:
                 return session
                 
         logger.warning(f"Session {session_id} not found, creating new")
-        return self.create_session("Recovered Session")
+        new_session = self.create_session("Recovered Session")
+        return new_session  # Return the new session instead of calling get_session again
 
     def list_sessions(self) -> List[Dict[str, Any]]:
         """Get simplified session list for UI display"""

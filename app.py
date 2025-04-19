@@ -136,6 +136,7 @@ def get_current_session():
         # Create first session if none exists
         new_session = st.session_state.session_manager.create_session("Initial Session")
         st.session_state.current_session_id = new_session['id']
+        return new_session  # Return immediately
     return st.session_state.session_manager.get_session(st.session_state.current_session_id)
 
 def create_new_session(session_name: str):
@@ -258,7 +259,6 @@ def process_user_input(user_query: str, session_id: str):
             'timeline_entry': timeline_entry,
             'current_timeline': get_current_session()['emotion_timeline']
         }
-        session['emotion_timeline'].append(timeline_entry)
         
         # Store message with analytics
         st.session_state.session_manager.add_message_to_session(
@@ -270,8 +270,8 @@ def process_user_input(user_query: str, session_id: str):
         )
         
         # Update timeline directly in session
-        session = st.session_state.session_manager.get_session(session_id)
-        session['emotion_timeline'].append(timeline_entry)
+        current_session = st.session_state.session_manager.get_session(session_id) 
+        current_session['emotion_timeline'].append(timeline_entry)
 
         # Knowledge retrieval
         context = {"text": "", "sources": []}
