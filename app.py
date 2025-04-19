@@ -367,7 +367,7 @@ def process_user_input(user_query: str, session_id: str):
                             'valence': analysis['valence']
                         }
                     },
-                    history=session['history'],
+                    history=current_session['history'],
                     tone_instruction=tone_instruction
                 ):
                     displayed_response += chunk
@@ -383,7 +383,7 @@ def process_user_input(user_query: str, session_id: str):
                 )
                 
                 # Resolution controls
-                message_index = len(session['history']) - 1
+                message_index = len(current_session['history']) - 1
                 st.markdown("---")
                 cols = st.columns([1, 4])
                 with cols[0]:
@@ -393,7 +393,7 @@ def process_user_input(user_query: str, session_id: str):
                         st.session_state.session_manager.mark_message_resolved(session_id, message_index)
                         st.rerun()
                 with cols[1]:
-                    if session['history'][message_index].get('resolved'):
+                    if current_session['history'][message_index].get('resolved'):
                         display_rating_buttons(session_id, message_index)
                     else:
                         st.caption("Rate resolution after marking resolved")
@@ -426,6 +426,7 @@ def sidebar_interface():
         if st.button("➕ Create New Session", key="create_new_session"):
             create_new_session(new_name)
         
+        current_session = get_current_session()
         # List existing sessions
         st.write("#### Active Sessions")
         for session in st.session_state.session_manager.list_sessions():
@@ -448,7 +449,7 @@ def sidebar_interface():
         if st.checkbox("📈 Show Emotion Analytics"):
             try:
                 # Get current session safely
-                current_session = get_current_session()
+
                 st.session_state.visualizer.display_analytics_dashboard(current_session)
             except Exception as e:
                 st.error(f"Failed to load analytics: {str(e)}")
