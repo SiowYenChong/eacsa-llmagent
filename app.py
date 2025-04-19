@@ -132,7 +132,7 @@ def initialize_system():
 initialize_system()
 
 def get_current_session():
-    if not st.session_state.current_session_id:
+    if 'current_session_id' not in st.session_state or not st.session_state.current_session_id:
         new_session = st.session_state.session_manager.create_session("New Session")
         st.session_state.current_session_id = new_session['id']
     return st.session_state.session_manager.get_session(st.session_state.current_session_id)
@@ -230,7 +230,7 @@ def process_user_input(user_query: str, session_id: str):
         st.session_state.debug_data = {
             'last_analysis': analysis,
             'timeline_entry': timeline_entry,
-            'current_timeline': st.session_state.session_manager.current_session['emotion_timeline']
+            'current_timeline': get_current_session()['emotion_timeline']
         }
         current_session = st.session_state.session_manager.get_session(session_id)
         current_session['emotion_timeline'].append(timeline_entry)
