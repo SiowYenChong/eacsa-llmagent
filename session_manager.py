@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
+import uuid
 from typing import List, Dict, Any, Optional
-import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -8,22 +8,40 @@ logger = logging.getLogger(__name__)
 class SessionManager:
     def __init__(self):
         self.sessions = []
-        self.current_session = self._create_new_session()
-        
-    def _create_new_session(self, title: str = "New Session") -> Dict[str, Any]:
-        return {
-            'id': datetime.now().strftime("%Y%m%d%H%M%S"),
+        self.current_session_id = None
+
+    def _generate_session_id(self) -> str:
+        """Generate unique session ID using UUID"""
+        return str(uuid.uuid4())
+
+    def create_session(self, title: str) -> Dict[str, Any]:
+        """Create and return new session with UUID"""
+        new_session = {
+            'id': self._generate_session_id(),
             'title': title,
             'history': [],
             'emotion_timeline': [],
             'created_at': datetime.now().isoformat(),
             'last_updated': datetime.now().isoformat()
         }
+        self.sessions.append(new_session)
+        self.current_session_id = new_session['id']
+        return new_session
 
-    def add_message_to_current_session(self, role: str, content: str, 
-                                  sentiment_score: float = None, 
-                                  emotions: list = None):
-        """Store message with full sentiment context"""
+    def get_session(self, session_id: str) -> Dict[str, Any]:
+        """Get session by ID with fallback creation"""
+        if not session_id:
+            return self.create_session("New Session")
+            
+        return next(
+            (s for s in self.sessions if s['id'] == session_id),
+            self.create_session("New Session")
+        )
+
+    def add_message_to_session(self, session_id: str, role: str, content: str, 
+                             sentiment_score: float = None, emotions: list = None):
+        """Add message to specific session with emotion tracking"""
+        session = self.get_session(session_id)
         message = {
             "role": role,
             "content": content,
@@ -42,45 +60,45 @@ class SessionManager:
                 "sentiment_alignment": None
             }
         
-        self.current_session['history'].append(message)
-        self._update_emotion_timeline(sentiment_score, emotions)
+        session['history'].append(message)
+        session['last_updated'] = datetime.now().isoformat()
         
-    def _update_emotion_timeline(self, score: float, emotions: list):
-        """Track emotional state evolution"""
-        if score is None or not emotions:
-            return
-        
-        timeline_entry = {
-            "timestamp": datetime.now().isoformat(),
-            "score": score,
-            "dominant_emotion": emotions[0]['label'] if emotions else 'neutral',
-            "emotion_intensity": emotions[0]['score'] if emotions else 0.0
-        }
-        self.current_session['emotion_timeline'].append(timeline_entry)
+        # Update emotion timeline if available
+        if sentiment_score is not None and emotions:
+            timeline_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "score": sentiment_score,
+                "dominant_emotion": emotions[0]['label'] if emotions else 'neutral',
+                "emotion_intensity": emotions[0]['score'] if emotions else 0.0
+            }
+            session['emotion_timeline'].append(timeline_entry)
 
-    def get_all_session_titles(self) -> List[str]:
-        return [s['title'] for s in self.sessions]
-
-    def mark_message_resolved(self, message_index: int, rating: int = None):
-        """Unified resolution handling"""
-        if 0 <= message_index < len(self.current_session['history']):
-            self.current_session['history'][message_index]['resolved'] = True
+    def mark_message_resolved(self, session_id: str, message_index: int, rating: int = None):
+        """Mark message as resolved in specific session"""
+        session = self.get_session(session_id)
+        if 0 <= message_index < len(session['history']):
+            session['history'][message_index]['resolved'] = True
             if rating:
-                self.current_session['history'][message_index]['rating'] = rating
-            self.current_session['last_updated'] = datetime.now().isoformat()
+                session['history'][message_index]['rating'] = rating
+            session['last_updated'] = datetime.now().isoformat()
 
-    def create_session(self, title: str) -> Dict[str, Any]:
-        new_session = self._create_new_session(title)
-        self.sessions.append(new_session)
-        self.current_session = new_session
-        return new_session
+    def clear_session(self, session_id: str) -> None:
+        """Clear specific session's history"""
+        session = self.get_session(session_id)
+        session['history'] = []
+        session['emotion_timeline'] = []
+        session['last_updated'] = datetime.now().isoformat()
 
-    def clear_current_session(self) -> None:
-        self.current_session['history'] = []
-        self.current_session['last_updated'] = datetime.now().isoformat()
+    def list_sessions(self) -> List[Dict]:
+        """Get simplified session list for UI display"""
+        return [{
+            'id': s['id'],
+            'title': s['title'],
+            'created': s['created_at'],
+            'updated': s['last_updated'],
+            'message_count': len(s['history'])
+        } for s in self.sessions]
 
-    # Add to SessionManager class in session_manager.py
     def get_session_by_title(self, title: str) -> Optional[Dict[str, Any]]:
-        """Get session by exact title match"""
+        """Legacy method - prefer ID-based access"""
         return next((s for s in self.sessions if s['title'] == title), None)
-    
