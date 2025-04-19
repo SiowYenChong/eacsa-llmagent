@@ -1,6 +1,7 @@
 from datetime import datetime
 import uuid
 from typing import List, Dict, Any, Optional
+import streamlit as st
 import logging
 
 logger = logging.getLogger(__name__)
@@ -8,14 +9,12 @@ logger = logging.getLogger(__name__)
 class SessionManager:
     def __init__(self):
         self.sessions = []
-        self.current_session_id = None
 
     def _generate_session_id(self) -> str:
         """Generate unique session ID using UUID"""
         return str(uuid.uuid4())
 
     def create_session(self, title: str) -> Dict[str, Any]:
-        """Create and return new session with UUID"""
         new_session = {
             'id': self._generate_session_id(),
             'title': title,
@@ -25,8 +24,7 @@ class SessionManager:
             'last_updated': datetime.now().isoformat()
         }
         self.sessions.append(new_session)
-        self.current_session_id = new_session['id']
-        return new_session
+        return new_session  # Don't set current_session_id here
 
     def get_session(self, session_id: str) -> Dict[str, Any]:
         """Get session by ID with fallback creation"""
@@ -102,3 +100,11 @@ class SessionManager:
     def get_session_by_title(self, title: str) -> Optional[Dict[str, Any]]:
         """Legacy method - prefer ID-based access"""
         return next((s for s in self.sessions if s['title'] == title), None)
+    
+    def get_current_session():
+        if not st.session_state.current_session_id:
+            new_session = st.session_state.session_manager.create_session("New Session")
+            st.session_state.current_session_id = new_session['id']
+        return st.session_state.session_manager.get_session(
+            st.session_state.current_session_id
+        )

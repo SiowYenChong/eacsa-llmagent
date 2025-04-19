@@ -120,9 +120,8 @@ def initialize_system():
                 
                 # Create initial session if none exists
                 if not st.session_state.session_manager.sessions:
-                    st.session_state.current_session_id = st.session_state.session_manager.create_session(
-                        "Initial Session"
-                    )['id']
+                    new_session = st.session_state.session_manager.create_session("Initial Session")
+                    st.session_state.current_session_id = new_session['id']  # Direct ID access
                     
             except Exception as e:
                 st.error(f"Initialization failed: {str(e)}")
@@ -229,10 +228,12 @@ def process_user_input(user_query: str, session_id: str):
             'timeline_entry': timeline_entry,
             'current_timeline': st.session_state.session_manager.current_session['emotion_timeline']
         }
-        st.session_state.session_manager.current_session['emotion_timeline'].append(timeline_entry)
+        current_session = st.session_state.session_manager.get_session(session_id)
+        current_session['emotion_timeline'].append(timeline_entry)
         
         # Store message with analytics
-        st.session_state.session_manager.add_message_to_current_session(
+        st.session_state.session_manager.add_message_to_session(
+            session_id=session_id,
             role="user",
             content=sanitized_query,
             sentiment_score=analysis['sentiment']['score'],
@@ -408,7 +409,10 @@ def sidebar_interface():
                     pass
         
         st.markdown("---")
-        
+        if st.checkbox("📈 Show Emotion Analytics"):
+            current_session = get_current_session()
+            st.session_state.visualizer.display_analytics_dashboard(current_session)
+            
         # Session tools
         if st.button("🧹 Clear Current Session"):
             st.session_state.session_manager.clear_session(st.session_state.current_session_id)
