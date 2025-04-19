@@ -132,8 +132,9 @@ def initialize_system():
 initialize_system()
 
 def get_current_session():
-    if 'current_session_id' not in st.session_state or not st.session_state.current_session_id:
-        new_session = st.session_state.session_manager.create_session("New Session")
+    if not st.session_state.get('current_session_id'):
+        # Create first session if none exists
+        new_session = st.session_state.session_manager.create_session("Initial Session")
         st.session_state.current_session_id = new_session['id']
     return st.session_state.session_manager.get_session(st.session_state.current_session_id)
 
