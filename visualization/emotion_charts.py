@@ -15,12 +15,17 @@ class EmotionVisualizer:
             return
         
         try:
+            # Convert timeline data to DataFrame
             df = pd.DataFrame(timeline)
-            # Convert numeric fields (add missing fields)
-            df['sentiment_score'] = pd.to_numeric(df['score'], errors='coerce')  # Map score to sentiment_score
-            df['dominant_emotion'] = df['dominant_emotion'].fillna('neutral')
+            
+            # Ensure numeric conversion for sentiment values
+            df['sentiment_score'] = pd.to_numeric(df['sentiment_score'], errors='coerce')
+            df['emotion_intensity'] = pd.to_numeric(df['emotion_intensity'], errors='coerce')
+            
+            # Convert timestamp
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             
+            # Create visualizations
             with st.expander("📈 Emotion Timeline", expanded=True):
                 self.create_emotion_timeline(df)
                 
