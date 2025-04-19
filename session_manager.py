@@ -21,12 +21,11 @@ class SessionManager:
             'title': title,
             'history': [],
             'emotion_timeline': [],
-            'created_at': datetime.now().isoformat(),
+            'created_at': datetime.now().isoformat(),  # This is the source key
             'last_updated': datetime.now().isoformat(),
             'message_count': 0
         }
         self.sessions.append(new_session)
-        logger.info(f"Created new session: {new_session['id']}")
         return new_session
 
     def get_session(self, session_id: str) -> Dict[str, Any]:
@@ -47,8 +46,8 @@ class SessionManager:
         return [{
             'id': s['id'],
             'title': s['title'],
-            'created_at': s['created_at'],  # Keep original field name
-            'updated_at': s['last_updated'],
+            'created': s['created_at'],  # Map created_at to created
+            'updated': s['last_updated'],
             'message_count': len(s['history'])
         } for s in self.sessions]
 
