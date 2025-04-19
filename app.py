@@ -111,7 +111,7 @@ def initialize_system():
                     'session_manager': session_manager,
                     'visualizer': visualizer,
                     'data_sanitizer': DataSanitizer(),
-                    'hitl_manager': HITLManager(session_manager),
+                    'hitl_manager': HITLManager(st.session_state.session_manager),
                     'cultural_detector': LanguageDetector(),
                     'bias_auditor': BiasAuditor(),
                     'explainer': EmotionExplainer(
@@ -179,6 +179,28 @@ def display_rating_buttons(session_id: str, message_index: int):
                                 st.session_state.session_manager.mark_message_resolved(sid, mi, r)
                         ):
                             st.rerun()
+def _handle_escalation():
+    """Handle human escalation workflow"""
+    current_session = get_current_session()
+    
+    # Add system message to history
+    escalation_msg = "🚨 Transferring to human agent... Please wait while we connect you to a support specialist."
+    st.session_state.session_manager.add_message_to_session(
+        session_id=current_session['id'],
+        role="system",
+        content=escalation_msg
+    )
+    
+    # Trigger external notification
+    try:
+        st.session_state.hitl_manager.trigger_human_intervention(
+            session_id=current_session['id'],
+            reason="Negative sentiment escalation"
+        )
+    except Exception as e:
+        logger.error(f"Escalation failed: {str(e)}")
+    
+    return escalation_msg
 
 def process_user_input(user_query: str, session_id: str):
     try:
@@ -192,8 +214,11 @@ def process_user_input(user_query: str, session_id: str):
         analysis = st.session_state.sentiment_agent.analyze(sanitized_query)
         tone_guidance = st.session_state.sentiment_agent.generate_tone_guidance(analysis)
 
-        if 'explainer' not in st.session_state:
-            st.session_state.explainer = EmotionExplainer(model, tokenizer)
+        if 'explainer' not in st.session_state and st.session_state.sentiment_agent:
+            st.session_state.explainer = EmotionExplainer(
+                st.session_state.sentiment_agent.emotion_classifier.model,
+                st.session_state.sentiment_agent.emotion_classifier.tokenizer
+            )
             
         # Bias auditing
         if st.session_state.bias_auditor:

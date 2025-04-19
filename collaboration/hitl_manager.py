@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-
 class HITLManager:
     ESCALATION_THRESHOLDS = {
         'anger': 0.85,
@@ -7,14 +6,13 @@ class HITLManager:
         'financial_impact': 500.00
     }
     
-    def __init__(self, session_manager, current_session_id):
+    def __init__(self, session_manager):  # Remove current_session_id from init
         self.session_manager = session_manager
-        self.current_session_id = current_session_id
 
-    def check_escalation_needed(self):
+    def check_escalation_needed(self, session_id):  # Add session_id parameter
         """Determine if human intervention required"""
-        current_session = self.session_manager.get_session(self.current_session_id)
-        timeline = current_session['emotion_timeline']  # Fixed variable name
+        current_session = self.session_manager.get_session(session_id)
+        timeline = current_session['emotion_timeline']
         
         # Check recent strong negative emotions
         recent_anger = any(
