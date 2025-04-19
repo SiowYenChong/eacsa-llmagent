@@ -397,17 +397,17 @@ def sidebar_interface():
         st.write("### Session Management")
         
         # Create new session
-        new_name = st.text_input("New Session Name:", "Untitled Conversation")
-        if st.button("➕ Create New Session"):
+        new_name = st.text_input("New Session Name:", "Untitled Conversation", key="new_session_name")
+        if st.button("➕ Create New Session", key="create_new_session"):
             create_new_session(new_name)
         
         # List existing sessions
         st.write("#### Active Sessions")
-        for session in st.session_state.session_manager.list_sessions():  # This line is now valid
+        for session in st.session_state.session_manager.list_sessions():
             cols = st.columns([3, 1])
             with cols[0]:
                 st.write(f"**{session['title']}**")
-                st.caption(f"Messages: {session['message_count']}")
+                st.caption(f"Created: {datetime.fromisoformat(session['created_at']).strftime('%Y-%m-%d %H:%M')}")
             with cols[1]:
                 if st.button(
                     "🔁",
@@ -422,10 +422,9 @@ def sidebar_interface():
         if st.checkbox("📈 Show Emotion Analytics"):
             current_session = get_current_session()
             st.session_state.visualizer.display_analytics_dashboard(current_session)
-      
         
         # Session tools
-        if st.button("🧹 Clear Current Session"):
+        if st.button("🧹 Clear Current Session", key="clear_session"):
             st.session_state.session_manager.clear_session(st.session_state.current_session_id)
             st.rerun()
             
@@ -433,17 +432,19 @@ def sidebar_interface():
             "📥 Export Conversation",
             data=json.dumps(get_current_session(), indent=2),
             file_name="conversation.json",
-            mime="application/json"
+            mime="application/json",
+            key="export_conversation"
         )
         
         # Debug tools
         st.markdown("---")
-        if st.checkbox("Show debug data"):
+        if st.checkbox("Show debug data", key="debug_data_checkbox"):
             st.write("### Debug Information")
             st.write(st.session_state.debug_data)
             
-        if st.checkbox("📈 Show Emotion Analytics"):
+        if st.checkbox("📈 Show Emotion Analytics", key="emotion_analytics_checkbox"):
             st.session_state.visualizer.display_analytics_dashboard(get_current_session())
+
 
 def main_interface():
     st.title("🤖 AI Customer Support Assistant")
