@@ -446,11 +446,13 @@ def sidebar_interface():
         
         st.markdown("---")
         if st.checkbox("📈 Show Emotion Analytics"):
-            current_session = get_current_session()
             try:
+                # Get current session safely
+                current_session = get_current_session()
                 st.session_state.visualizer.display_analytics_dashboard(current_session)
             except Exception as e:
                 st.error(f"Failed to load analytics: {str(e)}")
+                logger.exception("Analytics error")
         
         # Session tools
         if st.button("🧹 Clear Current Session", key="clear_session"):
