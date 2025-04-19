@@ -51,8 +51,6 @@ class SessionManager:
             'updated': s['last_updated'],
             'message_count': len(s['history'])
         } for s in self.sessions]
-            
-        return session
 
     def add_message_to_session(self, session_id: str, role: str, content: str, 
                              sentiment_score: float = None, emotions: list = None):
