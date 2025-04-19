@@ -446,14 +446,7 @@ def sidebar_interface():
                     pass
         
         st.markdown("---")
-        if st.checkbox("📈 Show Emotion Analytics"):
-            try:
-                # Get current session safely
 
-                st.session_state.visualizer.display_analytics_dashboard(current_session)
-            except Exception as e:
-                st.error(f"Failed to load analytics: {str(e)}")
-                logger.exception("Analytics error")
         
         # Session tools
         if st.button("🧹 Clear Current Session", key="clear_session"):
@@ -474,8 +467,14 @@ def sidebar_interface():
             st.write("### Debug Information")
             st.write(st.session_state.debug_data)
             
-        if st.checkbox("📈 Show Emotion Analytics", key="emotion_analytics_checkbox"):
-            st.session_state.visualizer.display_analytics_dashboard(get_current_session())
+        if st.checkbox("📈 Show Emotion Analytics"):
+            try:
+                # Get current session safely
+
+                st.session_state.visualizer.display_analytics_dashboard(current_session)
+            except Exception as e:
+                st.error(f"Failed to load analytics: {str(e)}")
+                logger.exception("Analytics error")
 
 
 def main_interface():

@@ -2,13 +2,14 @@ import plotly.express as px
 import pandas as pd
 import streamlit as st
 from datetime import datetime
+import json
 
 class EmotionVisualizer:
     def __init__(self, session_manager):
         self.session_manager = session_manager
     
-    def display_analytics_dashboard(self, session):  # Add session parameter
-        timeline = session.get('emotion_timeline', [])  # Use passed session
+    def display_analytics_dashboard(self, session):
+        timeline = session.get('emotion_timeline', [])
         
         if len(timeline) < 2:
             st.warning("Continue chatting to build emotion insights!")
@@ -16,35 +17,33 @@ class EmotionVisualizer:
         
         try:
             df = pd.DataFrame(timeline)
+            session_id = session['id']  # Get session ID for unique keys
+            
+            # Data preprocessing
             df['timestamp'] = pd.to_datetime(df['timestamp'])
-            
-            # ENSURE NUMERIC COLUMNS
-            df['sentiment_score'] = pd.to_numeric(df['sentiment_score'])
-            df['emotion_intensity'] = pd.to_numeric(df['emotion_intensity'])
-            
-            # Convert timestamp
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            
-            # Create visualizations
+            df['sentiment_score'] = pd.to_numeric(df['sentiment_score'], errors='coerce')
+            df['emotion_intensity'] = pd.to_numeric(df['emotion_intensity'], errors='coerce')
+
+            # Visualizations with unique keys
             with st.expander("📈 Emotion Timeline", expanded=True):
-                self.create_emotion_timeline(df)
+                self.create_emotion_timeline(df, session_id)
                 
             with st.expander("🌡️ Sentiment Heatmap"):
-                self.create_heatmap(df)
+                self.create_heatmap(df, session_id)
                 
             with st.expander("📊 Summary Statistics"):
-                self.show_summary_stats(df)
+                self.show_summary_stats(df, session_id)
                 
         except Exception as e:
             st.error(f"Visualization error: {str(e)}")
 
-    def create_emotion_timeline(self, df):
-        """Create timeline using actual column names"""
+    def create_emotion_timeline(self, df, session_id):
+        """Create timeline with unique session-based key"""
         fig = px.line(
             df,
             x='timestamp',
-            y='sentiment_score',  # Changed from 'intensity'
-            color='dominant_emotion',  # Changed from 'emotion'
+            y='sentiment_score',
+            color='dominant_emotion',
             title="Sentiment Score Timeline",
             labels={
                 'sentiment_score': 'Sentiment Score',
@@ -53,19 +52,18 @@ class EmotionVisualizer:
             },
             markers=True
         )
-        fig.update_layout(
-            xaxis_title='Conversation Timeline',
-            yaxis_title='Sentiment Score (-1 to 1)',
-            hovermode='x unified'
+        st.plotly_chart(
+            fig, 
+            use_container_width=True,
+            key=f"timeline_{session_id}"  # Unique key per session
         )
-        st.plotly_chart(fig, use_container_width=True)
 
-    def create_heatmap(self, df):
-        """Create heatmap using correct columns"""
+    def create_heatmap(self, df, session_id):
+        """Heatmap with session-specific key"""
         heatmap_df = df.pivot_table(
-            index='dominant_emotion',  # Changed from 'emotion'
-            columns=pd.Grouper(key='timestamp', freq='5T'),
-            values='sentiment_score',  # Changed from 'intensity'
+            index='dominant_emotion',
+            columns=pd.Grouper(key='timestamp', freq='15T'),
+            values='sentiment_score',
             aggfunc='mean'
         ).fillna(0)
         
@@ -74,23 +72,26 @@ class EmotionVisualizer:
             labels=dict(x="Time Window", y="Dominant Emotion", color="Sentiment"),
             title="Sentiment Distribution Heatmap",
             aspect="auto",
-            color_continuous_scale='RdYlGn',
-            range_color=(-1, 1)  # Assuming sentiment scores range from -1 to 1
+            color_continuous_scale='RdYlGn'
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(
+            fig, 
+            use_container_width=True,
+            key=f"heatmap_{session_id}"  # Unique session-based key
+        )
 
-    def show_summary_stats(self, df):
-        """Update statistics with correct column names"""
+    def show_summary_stats(self, df, session_id):
+        """Statistics section with unique ID"""
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Total Interactions", len(df))
+            st.metric("Total Interactions", len(df), key=f"total_{session_id}")
             st.write("**Most Frequent Emotion**")
             st.write(df['dominant_emotion'].mode()[0])
             
         with col2:
             avg_sentiment = df['sentiment_score'].mean()
-            st.metric("Average Sentiment", f"{avg_sentiment:.2f}")
+            st.metric("Average Sentiment", f"{avg_sentiment:.2f}", key=f"avg_{session_id}")
             st.write("**Strongest Sentiment**")
             max_idx = df['sentiment_score'].abs().idxmax()
             st.write(f"{df.loc[max_idx]['dominant_emotion']} ({df.loc[max_idx]['sentiment_score']:.2f})")
@@ -106,46 +107,29 @@ class EmotionVisualizer:
                     'min': 'Minimum',
                     'count': 'Count'
                 }),
-                use_container_width=True
+                use_container_width=True,
+                key=f"dist_{session_id}"
             )
-    
-    def display_emotion_flow(self):
-        timeline = self.session_manager.current_session.get('emotion_timeline', [])
-        df = pd.DataFrame(timeline)
-        
-        fig = px.line(df, x='timestamp', y='intensity', color='dominant_emotion',
-                     title="Emotional Intensity Flow", markers=True)
-        fig.update_layout(
-            hovermode="x unified",
-            yaxis_range=[-1,1],
-            annotations=self._get_significant_events()
-        )
-        st.plotly_chart(fig)
 
-    def _get_significant_events(self):
-        events = []
-        for i, entry in enumerate(self.session_manager.current_session['emotion_timeline']):
-            if abs(entry['intensity']) > 0.8:
-                events.append(dict(
-                    x=entry['timestamp'],
-                    y=entry['intensity'],
-                    text=f"⚠️ {entry['dominant_emotion'].upper()}",
-                    showarrow=True
-                ))
-        return events
-    
-    # Add new explanation visualization
     def display_explanations(self, explanation: dict):
+        """Explanation visualization with content-based key"""
         with st.expander("🧠 AI Decision Breakdown"):
             st.write("### Emotion Attribution Analysis")
             df = pd.DataFrame({
                 'Token': explanation['tokens'],
                 'Relevance Score': explanation['attributions']
             })
+            
+            # Generate unique key from explanation content
+            explanation_hash = hash(json.dumps(explanation, sort_keys=True))
             fig = px.bar(df, x='Token', y='Relevance Score', 
                         color='Relevance Score',
                         color_continuous_scale='RdBu')
-            st.plotly_chart(fig)
+            
+            st.plotly_chart(
+                fig,
+                key=f"explanation_{explanation_hash}"  # Unique content-based key
+            )
             
             st.write("**Key Influences:**")
             st.markdown("""
