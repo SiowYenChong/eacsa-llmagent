@@ -47,8 +47,8 @@ class SessionManager:
         return [{
             'id': s['id'],
             'title': s['title'],
-            'created': s['created_at'],
-            'updated': s['last_updated'],
+            'created_at': s['created_at'],  # Keep original field name
+            'updated_at': s['last_updated'],
             'message_count': len(s['history'])
         } for s in self.sessions]
 

@@ -407,7 +407,7 @@ def sidebar_interface():
             cols = st.columns([3, 1])
             with cols[0]:
                 st.write(f"**{session['title']}**")
-                st.caption(f"Created: {datetime.fromisoformat(session['created_at']).strftime('%Y-%m-%d %H:%M')}")
+                st.caption(f"Created: {datetime.fromisoformat(session['created']).strftime('%Y-%m-%d %H:%M')}")
             with cols[1]:
                 if st.button(
                     "🔁",
