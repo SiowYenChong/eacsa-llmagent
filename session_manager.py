@@ -8,14 +8,14 @@ logger = logging.getLogger(__name__)
 class SessionManager:
     def __init__(self):
         self.sessions = []
-        logger.info("Initialized new SessionManager instance")
+        logger.info("SessionManager initialized with empty session list")
 
     def _generate_session_id(self) -> str:
-        """Generate unique session ID using UUID v4"""
+        """Generate UUID4-based session ID"""
         return str(uuid.uuid4())
 
     def create_session(self, title: str) -> Dict[str, Any]:
-        """Create and store new session with metadata"""
+        """Create new session with complete metadata"""
         new_session = {
             'id': self._generate_session_id(),
             'title': title,
@@ -30,20 +30,27 @@ class SessionManager:
         return new_session
 
     def get_session(self, session_id: str) -> Dict[str, Any]:
-        """Retrieve session by ID with error handling"""
+        """Get session by ID with error handling"""
         if not session_id:
-            logger.error("Attempted to get session with empty ID")
+            logger.error("Attempted to access session with empty ID")
             raise ValueError("Session ID cannot be empty")
-        
-        logger.debug(f"Looking for session: {session_id}")
-        session = next(
-            (s for s in self.sessions if s['id'] == session_id),
-            None
-        )
-        
-        if not session:
-            logger.warning(f"Session {session_id} not found, creating new")
-            return self.create_session("Recovered Session")
+            
+        for session in self.sessions:
+            if session['id'] == session_id:
+                return session
+                
+        logger.warning(f"Session {session_id} not found, creating new")
+        return self.create_session("Recovered Session")
+
+    def list_sessions(self) -> List[Dict[str, Any]]:
+        """Get simplified session list for UI display"""
+        return [{
+            'id': s['id'],
+            'title': s['title'],
+            'created': s['created_at'],
+            'updated': s['last_updated'],
+            'message_count': len(s['history'])
+        } for s in self.sessions]
             
         return session
 

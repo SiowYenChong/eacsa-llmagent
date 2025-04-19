@@ -403,7 +403,7 @@ def sidebar_interface():
         
         # List existing sessions
         st.write("#### Active Sessions")
-        for session in st.session_state.session_manager.list_sessions():
+        for session in st.session_state.session_manager.list_sessions():  # This line is now valid
             cols = st.columns([3, 1])
             with cols[0]:
                 st.write(f"**{session['title']}**")
