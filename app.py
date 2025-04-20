@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 import streamlit as st
 from dotenv import load_dotenv
-from elevenlabs import generate, set_api_key
+
 # Optional audio recorder
 try:
     from streamlit_audiorecorder import audiorecorder
@@ -15,6 +15,27 @@ except ImportError:
     )
     def audiorecorder(start_label, stop_label, key=None):
         return None
+
+# Optional audio recorder
+try:
+    from streamlit_audiorecorder import audiorecorder
+except ImportError:
+    logging.getLogger(__name__).warning(
+        "streamlit_audiorecorder not installed; disabling voice input"
+    )
+    def audiorecorder(start_label, stop_label, key=None):
+        return None
+
+# ElevenLabs TTS (optional)
+try:
+    from elevenlabs import generate, set_api_key
+except ImportError:
+    logger.warning("elevenlabs package not installed; disabling TTS")
+    def set_api_key(key):
+        pass
+    def generate(text, voice, model):
+        return None
+
 
 # Internal components
 from collaboration.hitl_manager import HITLManager
