@@ -371,7 +371,7 @@ def sidebar_interface():
 
         if st.checkbox("📈 Show Emotion Analytics"):
             visualizer.display_analytics_dashboard(current)
-            
+
         st.markdown("---")
         if st.button("📥 Export Conversation"):
             st.download_button(
@@ -400,7 +400,12 @@ def main_interface():
                 display_rating_buttons(current['id'], idx)
 
     prompt = st.chat_input("Type your message...")
-    if prompt or st.session_state.audio_data or st.session_state.uploaded_image:
+    input_triggered = (
+        (prompt and prompt.strip()) or
+        (st.session_state.audio_data is not None and st.session_state.audio_data != b'') or
+        (st.session_state.uploaded_image is not None)
+    )
+    if input_triggered:
         with st.spinner("Analyzing..."):
             process_user_input(
                 text=prompt,
