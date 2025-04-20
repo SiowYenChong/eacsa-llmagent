@@ -414,7 +414,7 @@ def main_interface():
                 voice_option=st.session_state.voice_option,
                 session_id=current['id']
             )
-        st.experimental_rerun()
+        st.rerun()
         return
 
 # Entry point
