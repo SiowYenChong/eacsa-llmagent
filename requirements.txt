@@ -22,6 +22,7 @@ cymem==2.0.11
 dataclasses-json==0.6.7
 distro==1.9.0
 en_core_web_lg @ https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl
+elevenlabs
 exceptiongroup==1.2.2
 fairlearn==0.8.0
 faiss-cpu==1.10.0
@@ -118,6 +119,7 @@ spacy-loggers==1.0.5
 SQLAlchemy==2.0.40
 srsly==2.5.1
 streamlit==1.44.0
+streamlit-audiorecorder 
 sympy==1.12
 tenacity==8.5.0
 thinc==8.2.5
