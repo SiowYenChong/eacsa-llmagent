@@ -22,7 +22,7 @@ class EmotionVisualizer:
             # Data preprocessing
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['sentiment_score'] = pd.to_numeric(df['sentiment_score'], errors='coerce')
-            df['emotion_intensity'] = pd.to_numeric(df['emotion_intensity'], errors='coerce')
+            df['intensity_trend'] = pd.to_numeric(df['intensity_trend'], errors='coerce')
 
             # Visualizations with unique keys
             with st.expander("📈 Emotion Timeline", expanded=True):

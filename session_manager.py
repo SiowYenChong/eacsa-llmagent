@@ -79,7 +79,7 @@ class SessionManager:
                 'timestamp': datetime.now().isoformat(),
                 'sentiment_score': sentiment_score,  # Changed from 'score'
                 'dominant_emotion': emotions[0]['label'] if emotions else 'neutral',
-                'emotion_intensity': emotions[0]['score'] if emotions else 0.0
+                'intensity_trend': emotions[0]['score'] if emotions else 0.0
             }
             session['emotion_timeline'].append(timeline_entry)
 
