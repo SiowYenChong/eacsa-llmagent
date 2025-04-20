@@ -4,7 +4,10 @@ import logging
 import uuid
 from datetime import datetime
 import streamlit as st
+import logging
 from dotenv import load_dotenv
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Optional audio recorder
 try:
