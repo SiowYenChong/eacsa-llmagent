@@ -85,13 +85,13 @@ class EmotionVisualizer:
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Total Interactions", len(df), key=f"total_{session_id}")
+            st.metric("Total Interactions", len(df))
             st.write("**Most Frequent Emotion**")
             st.write(df['dominant_emotion'].mode()[0])
             
         with col2:
             avg_sentiment = df['sentiment_score'].mean()
-            st.metric("Average Sentiment", f"{avg_sentiment:.2f}", key=f"avg_{session_id}")
+            st.metric("Average Sentiment", f"{avg_sentiment:.2f}")
             st.write("**Strongest Sentiment**")
             max_idx = df['sentiment_score'].abs().idxmax()
             st.write(f"{df.loc[max_idx]['dominant_emotion']} ({df.loc[max_idx]['sentiment_score']:.2f})")
@@ -108,7 +108,7 @@ class EmotionVisualizer:
                     'count': 'Count'
                 }),
                 use_container_width=True,
-                key=f"dist_{session_id}"
+                key=f"dist_{session_id}"  # DataFrames do support key
             )
 
     def display_explanations(self, explanation: dict):
