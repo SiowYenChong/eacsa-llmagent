@@ -330,7 +330,7 @@ def sidebar_interface():
         st.subheader("🖼️ Image Input")
         img = st.file_uploader("Upload image", type=["png","jpg","jpeg"])
         if img:
-            st.image(img, use_column_width=True)
+            st.image(img, use_container_width=True)
         st.session_state.uploaded_image = img
 
         voice = st.selectbox(
@@ -392,7 +392,7 @@ def main_interface():
             if msg.get('content_type') == 'audio':
                 st.audio(msg['content'], format="audio/wav")
             elif msg.get('content_type') == 'image':
-                st.image(msg['content'], use_column_width=True)
+                st.image(msg['content'], use_container_width=True)
             else:
                 st.markdown(msg['content'])
             st.caption(datetime.fromisoformat(msg['timestamp']).strftime('%Y-%m-%d %H:%M:%S'))
