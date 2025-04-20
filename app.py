@@ -369,6 +369,9 @@ def sidebar_interface():
                         if st.button("🔁", key=f"all_{sess['id']}"):
                             switch_session(sess['id'])
 
+        if st.checkbox("📈 Show Emotion Analytics"):
+            visualizer.display_analytics_dashboard(current)
+            
         st.markdown("---")
         if st.button("📥 Export Conversation"):
             st.download_button(
@@ -407,6 +410,7 @@ def main_interface():
                 session_id=current['id']
             )
         st.experimental_rerun()
+        return
 
 # Entry point
 if __name__ == "__main__":
