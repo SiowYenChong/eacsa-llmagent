@@ -100,3 +100,13 @@ class SessionManager:
         session['emotion_timeline'] = []
         session['message_count'] = 0
         session['last_updated'] = datetime.now().isoformat()
+    
+    def update_session(self, updated_session: Dict[str, Any]) -> None:
+        """Update an existing session in place"""
+        for idx, session in enumerate(self.sessions):
+            if session['id'] == updated_session['id']:
+                self.sessions[idx] = updated_session
+                self.sessions[idx]['last_updated'] = datetime.now().isoformat()
+                logger.info(f"Session {updated_session['id']} updated successfully.")
+                return
+        logger.warning(f"Attempted to update non-existent session {updated_session['id']}")
