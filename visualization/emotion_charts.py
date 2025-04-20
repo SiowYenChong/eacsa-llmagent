@@ -82,6 +82,8 @@ class EmotionVisualizer:
 
     def show_summary_stats(self, df, session_id):
         """Statistics section with unique ID"""
+        st.write("🔍 Debug: DataFrame Columns:", df.columns.tolist())  # Show columns
+        st.write("🔍 Debug: Sample Data:", df.head(1))  # Show first row
         if 'dominant_emotion' not in df.columns or 'sentiment_score' not in df.columns or df.empty:
             st.warning("Insufficient data to generate summary statistics.")
             return
