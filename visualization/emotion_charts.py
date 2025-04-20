@@ -82,34 +82,39 @@ class EmotionVisualizer:
 
     def show_summary_stats(self, df, session_id):
         """Statistics section with unique ID"""
+        if 'dominant_emotion' not in df.columns or 'sentiment_score' not in df.columns or df.empty:
+            st.warning("Insufficient data to generate summary statistics.")
+            return
+
         col1, col2, col3 = st.columns(3)
-        
+
         with col1:
             st.metric("Total Interactions", len(df))
             st.write("**Most Frequent Emotion**")
             st.write(df['dominant_emotion'].mode()[0])
-            
+
         with col2:
             avg_sentiment = df['sentiment_score'].mean()
             st.metric("Average Sentiment", f"{avg_sentiment:.2f}")
             st.write("**Strongest Sentiment**")
             max_idx = df['sentiment_score'].abs().idxmax()
             st.write(f"{df.loc[max_idx]['dominant_emotion']} ({df.loc[max_idx]['sentiment_score']:.2f})")
-            
+
         with col3:
             st.write("**Sentiment Distribution**")
-            st.dataframe(
-                df.groupby('dominant_emotion')['sentiment_score']
-                .agg(['mean', 'max', 'min', 'count'])
-                .rename(columns={
-                    'mean': 'Average',
-                    'max': 'Maximum',
-                    'min': 'Minimum',
-                    'count': 'Count'
-                }),
-                use_container_width=True,
-                key=f"dist_{session_id}"  # DataFrames do support key
-            )
+            grouped_df = df.groupby('dominant_emotion')['sentiment_score'].agg(['mean', 'max', 'min', 'count'])
+            if grouped_df.empty:
+                st.warning("No sentiment data available.")
+            else:
+                st.dataframe(
+                    grouped_df.rename(columns={
+                        'mean': 'Average',
+                        'max': 'Maximum',
+                        'min': 'Minimum',
+                        'count': 'Count'
+                    }),
+                    use_container_width=True
+                )
 
     def display_explanations(self, explanation: dict):
         """Explanation visualization with content-based key"""
