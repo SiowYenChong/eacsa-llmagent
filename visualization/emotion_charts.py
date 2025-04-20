@@ -31,7 +31,7 @@ class EmotionVisualizer:
             with st.expander("🌡️ Sentiment Heatmap"):
                 self.create_heatmap(df, session_id)
                 
-            with st.expander("📊 Summary Statistics"):
+            with st.expander("📊 Summary Statistics", expanded=True):
                 self.show_summary_stats(df, session_id)
                 
         except Exception as e:
@@ -81,11 +81,12 @@ class EmotionVisualizer:
         )
 
     def show_summary_stats(self, df, session_id):
-        """Statistics section with unique ID"""
         st.write("🔍 Debug: DataFrame Columns:", df.columns.tolist())  # Show columns
         st.write("🔍 Debug: Sample Data:", df.head(1))  # Show first row
-        if 'dominant_emotion' not in df.columns or 'sentiment_score' not in df.columns or df.empty:
-            st.warning("Insufficient data to generate summary statistics.")
+        """Statistics section with unique ID"""
+        required_columns = {'dominant_emotion', 'sentiment_score'}
+        if not required_columns.issubset(df.columns) or df.empty:
+            st.warning("Insufficient data to generate statistics.")
             return
 
         col1, col2, col3 = st.columns(3)
