@@ -383,7 +383,7 @@ def sidebar_interface():
 
 # Main chat UI
 def main_interface():
-    st.title("🤖 AI Customer Support Assistant")
+    st.title("AI Customer Support Assistant")
     st.caption("Enhanced with Emotional Intel & Multimodal I/O")
 
     current = get_current_session()
@@ -400,13 +400,23 @@ def main_interface():
                 display_rating_buttons(current['id'], idx)
 
     prompt = st.chat_input("Type your message...")
+
     input_triggered = (
         (prompt and prompt.strip()) or
         (st.session_state.audio_data is not None and st.session_state.audio_data != b'') or
         (st.session_state.uploaded_image is not None)
     )
+
     if input_triggered:
         with st.spinner("Analyzing..."):
+            # Save input into chat history first
+            if prompt and prompt.strip():
+                st.session_state.session_manager.add_message_to_session(
+                    session_id=current['id'],
+                    role="user",
+                    content=prompt.strip()
+                )
+
             process_user_input(
                 text=prompt,
                 audio=st.session_state.audio_data,
@@ -414,8 +424,10 @@ def main_interface():
                 voice_option=st.session_state.voice_option,
                 session_id=current['id']
             )
+
         st.rerun()
         return
+
 
 # Entry point
 if __name__ == "__main__":
