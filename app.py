@@ -272,6 +272,7 @@ def process_user_input(user_query: str, session_id: str):
         # Update timeline directly in session
         current_session = st.session_state.session_manager.get_session(session_id) 
         current_session['emotion_timeline'].append(timeline_entry)
+        st.session_state.session_manager.update_session(current_session)  
 
         # Knowledge retrieval
         context = {"text": "", "sources": []}

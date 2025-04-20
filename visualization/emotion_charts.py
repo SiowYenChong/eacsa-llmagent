@@ -81,27 +81,34 @@ class EmotionVisualizer:
         )
 
     def show_summary_stats(self, df, session_id):
-        st.write("🔍 Debug: DataFrame Columns:", df.columns.tolist())  # Show columns
-        st.write("🔍 Debug: Sample Data:", df.head(1))  # Show first row
-        """Statistics section with unique ID"""
+        # Debugging
+        st.write("🔍 Debug: DataFrame Columns:", df.columns.tolist())
+        st.write("🔍 Debug: Sample Data:", df.head(1))
+        
+        # Check required columns and data
         required_columns = {'dominant_emotion', 'sentiment_score'}
         if not required_columns.issubset(df.columns) or df.empty:
             st.warning("Insufficient data to generate statistics.")
             return
 
+        # Create columns layout
         col1, col2, col3 = st.columns(3)
 
         with col1:
             st.metric("Total Interactions", len(df))
             st.write("**Most Frequent Emotion**")
-            st.write(df['dominant_emotion'].mode()[0])
+            mode_result = df['dominant_emotion'].mode()
+            st.write(mode_result[0] if not mode_result.empty else "N/A")
 
         with col2:
             avg_sentiment = df['sentiment_score'].mean()
-            st.metric("Average Sentiment", f"{avg_sentiment:.2f}")
-            st.write("**Strongest Sentiment**")
-            max_idx = df['sentiment_score'].abs().idxmax()
-            st.write(f"{df.loc[max_idx]['dominant_emotion']} ({df.loc[max_idx]['sentiment_score']:.2f})")
+            st.metric("Average Sentiment", f"{avg_sentiment:.2f}" if pd.notnull(avg_sentiment) else "N/A")
+            
+            if not df['sentiment_score'].isna().all():
+                max_idx = df['sentiment_score'].abs().idxmax()
+                st.write(f"{df.loc[max_idx]['dominant_emotion']} ({df.loc[max_idx]['sentiment_score']:.2f})")
+            else:
+                st.write("No sentiment data")
 
         with col3:
             st.write("**Sentiment Distribution**")
